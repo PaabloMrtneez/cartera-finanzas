@@ -1,0 +1,66 @@
+name: Enviar avisos
+
+# Los avisos se comprueban cada dos horas. La propia ruta respeta la ventana de
+# silencio (nada entre las 23:00 y las 08:00 de Madrid) y no repite un aviso ya
+# mandado, así que ejecutarla de más es inofensivo.
+#
+# En cada pasada, ANTES de avisar (también en la ventana de silencio), la ruta
+# cobra las cuotas vencidas de los préstamos. Es idempotente: una pasada de más
+# no cobra dos veces.
+#
+# No se usan Vercel Cron porque el plan gratuito solo permite una ejecución al
+# día; GitHub Actions no tiene ese límite.
+
+on:
+  schedule:
+    # Cada dos horas para los avisos de límite, que se quieren pronto.
+    - cron: "0 */2 * * *"
+    # Y a las 07:00 UTC, que es las 9 de la mañana de Madrid en horario de
+    # verano. En invierno esa hora la cubre ya la de las 08:00 UTC de arriba.
+    # Los cron de GitHub son en UTC y Madrid cambia de hora dos veces al año,
+    # así que la hora buena la decide la base de datos mirando la hora de
+    # Madrid: esto solo se asegura de que haya una ejecución con la que
+    # coincida.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      forzar:
+        description: "Ignorar la ventana de silencio"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  avisar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pedir el envío de avisos
+        env:
+          URL: ${{ secrets.APP_URL }}
+          SECRETO: ${{ secrets.NOTIFY_SECRET }}
+          FORZAR: ${{ inputs.forzar }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$SECRETO" ]; then
+            echo "::error::Faltan los secretos APP_URL o NOTIFY_SECRET"
+            exit 1
+          fi
+
+          destino="$URL/api/notificar"
+          if [ "$FORZAR" = "true" ]; then
+            destino="$destino?forzar=1"
+          fi
+
+          respuesta=$(curl -sS -w "\n%{http_code}" -X POST "$destino" \
+            -H "Authorization: Bearer $SECRETO")
+
+          cuerpo=$(echo "$respuesta" | head -n -1)
+          codigo=$(echo "$respuesta" | tail -n 1)
+
+          echo "$cuerpo"
+
+          if [ "$codigo" != "200" ]; then
+            echo "::error::La ruta de avisos devolvió $codigo"
+            exit 1
+          fi

@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="24" viewBox="0 0 1280 24" aria-hidden="true">
+
+<style>
+  .sube { animation: sube 0.9s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes sube { from { opacity: 0; transform: translateY(14px); } }
+  .aparece { animation: aparece 1.2s ease-out both; }
+  @keyframes aparece { from { opacity: 0; } }
+  .deriva-a { animation: deriva-a 18s ease-in-out infinite alternate; }
+  .deriva-b { animation: deriva-b 22s ease-in-out infinite alternate; }
+  .deriva-c { animation: deriva-c 26s ease-in-out infinite alternate; }
+  @keyframes deriva-a { to { transform: translate(90px, 30px); } }
+  @keyframes deriva-b { to { transform: translate(-110px, -20px); } }
+  @keyframes deriva-c { to { transform: translate(60px, -40px); } }
+  .titila { animation: titila 4s ease-in-out infinite; }
+  @keyframes titila { 50% { opacity: 0.15; } }
+  .barrido { animation: barrido 6s cubic-bezier(.45,0,.55,1) 2s infinite; }
+  @keyframes barrido { from { transform: translateX(-320px); } 45%, to { transform: translateX(1600px); } }
+  * { transform-box: fill-box; }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+</style>
+<defs><linearGradient id="sep" x1="0" x2="1"><stop offset="0" stop-color="#7564e8" stop-opacity="0"/><stop offset="0.2" stop-color="#7564e8"/><stop offset="0.5" stop-color="#1fb0ab"/><stop offset="0.8" stop-color="#d3a443"/><stop offset="1" stop-color="#d3a443" stop-opacity="0"/></linearGradient>
+<linearGradient id="sep-luz" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.9"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+<clipPath id="sep-c"><rect x="0" y="11" width="1280" height="2" rx="1"/></clipPath></defs>
+<rect x="0" y="11" width="1280" height="2" rx="1" fill="url(#sep)" opacity="0.7"/>
+<g clip-path="url(#sep-c)"><rect class="barrido" x="0" y="11" width="220" height="2" fill="url(#sep-luz)"/></g>
+</svg>

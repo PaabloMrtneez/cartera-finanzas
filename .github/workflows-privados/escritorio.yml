@@ -1,0 +1,82 @@
+name: Escritorio (Windows)
+
+# Compila el instalador de Cartera para Windows y lo publica como Release del
+# repositorio. Se hace aquí y no en local porque el portátil de trabajo no deja
+# a electron-builder lanzar su 7-Zip (AssignProcessToJobObject), y sin él no
+# hay instalador NSIS.
+#
+# Se lanza a mano (Actions → «Escritorio (Windows)» → Run workflow) o al subir
+# una etiqueta `escritorio-v*`. La versión sale de escritorio/package.json: para
+# publicar otra, se sube ese número.
+#
+# El instalador no lleva ningún secreto: la app de escritorio es una ventana
+# que abre la web publicada (ver escritorio/main.js). Aun así se comprueba.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["escritorio-v*"]
+
+concurrency:
+  group: escritorio
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  instalador:
+    runs-on: windows-latest
+    permissions:
+      # Solo para crear la Release y subirle el instalador.
+      contents: write
+    defaults:
+      run:
+        working-directory: escritorio
+        shell: bash
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: escritorio/package-lock.json
+
+      - run: npm ci
+
+      - name: Compilar el instalador
+        run: npx electron-builder --win nsis --x64 --publish never
+
+      # La regla 8 de AGENTS.md, también aquí: ni la clave secreta de Supabase
+      # ni la de servicio pueden viajar en lo que se reparte.
+      - name: Ningún secreto en la app empaquetada
+        run: |
+          asar=dist/win-unpacked/resources/app.asar
+          if grep -aEq 'sb_secret_[A-Za-z0-9_-]{16,}|SUPABASE_SERVICE_ROLE_KEY|service_role' "$asar"; then
+            echo "::error::La app empaquetada contiene algo que parece un secreto"
+            exit 1
+          fi
+          echo "app.asar limpio."
+
+      - name: Publicar la Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          etiqueta="escritorio-v$version"
+          exe="dist/Cartera-Setup-$version.exe"
+          suma=$(sha256sum "$exe" | cut -d' ' -f1)
+          notas=$(printf '%s\n\n%s\n\n%s\n%s\n\n%s' \
+            "Cartera para Windows $version: una ventana propia que abre la app publicada." \
+            "Al instalar, Windows avisará de que el editor es desconocido (el instalador no va firmado): «Más información» → «Ejecutar de todas formas»." \
+            "SHA-256 del instalador:" \
+            "\`$suma\`" \
+            "Compilado por GitHub Actions desde $GITHUB_SHA.")
+          if gh release view "$etiqueta" > /dev/null 2>&1; then
+            gh release upload "$etiqueta" "$exe" --clobber
+            gh release edit "$etiqueta" --notes "$notas"
+          else
+            gh release create "$etiqueta" "$exe" --target "$GITHUB_SHA" \
+              --title "Cartera para Windows $version" --notes "$notas"
+          fi

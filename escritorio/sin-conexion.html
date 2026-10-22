@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--
+      Una página local, sin nada de fuera: ni fuentes ni scripts ajenos. Sale
+      cuando Cartera no carga (sin red la primera vez, o Vercel caído) y vuelve
+      sola en cuanto hay conexión.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'"
+    />
+    <title>Cartera · Sin conexión</title>
+    <style>
+      :root {
+        --bg: #02040a;
+        --fg: #ecf1fb;
+        --muted: #9fa8c0;
+        --accent: #56d9d4;
+        --btn-negro: #05060b;
+        --btn-negro-fg: #f3f6fc;
+        --grad-aurora: linear-gradient(90deg, #8b7bf0 0%, #48d4d0 52%, #e6c06a 100%);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+      }
+      body {
+        display: grid;
+        place-items: center;
+        padding: 24px 16px;
+        background:
+          radial-gradient(60% 50% at 20% 0%, rgba(139, 123, 240, 0.18), transparent 70%),
+          radial-gradient(50% 40% at 90% 10%, rgba(72, 212, 208, 0.12), transparent 70%),
+          var(--bg);
+        color: var(--fg);
+        font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      main {
+        max-width: 380px;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .marca {
+        height: 3px;
+        width: 64px;
+        margin: 0 auto 6px;
+        border-radius: 999px;
+        background: var(--grad-aurora);
+      }
+      h1 {
+        margin: 0;
+        font-size: 24px;
+        line-height: 30px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 22px;
+        color: var(--muted);
+      }
+      .estado {
+        font-size: 13px;
+        line-height: 18px;
+      }
+      /* El botón negro con canto Aurora de la app (`boton-aurora`). */
+      a.boton {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 46px;
+        padding: 0 22px;
+        border-radius: 14px;
+        color: var(--btn-negro-fg);
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: 600;
+        border: 1px solid transparent;
+        background:
+          linear-gradient(var(--btn-negro), var(--btn-negro)) padding-box,
+          var(--grad-aurora) border-box;
+      }
+      a.boton:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .estado::after {
+          content: "";
+          display: inline-block;
+          width: 6px;
+          height: 6px;
+          margin-left: 8px;
+          border-radius: 50%;
+          background: var(--accent);
+          vertical-align: middle;
+          animation: latido 1.6s ease-in-out infinite;
+        }
+        @keyframes latido {
+          50% {
+            opacity: 0.25;
+          }
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="marca" aria-hidden="true"></div>
+      <h1>Sin conexión</h1>
+      <p>Cartera necesita internet para traer tus cuentas. En cuanto vuelva la red, se abrirá sola.</p>
+      <p class="estado" role="status">Esperando a la red</p>
+      <a class="boton" id="reintentar" href="#">Reintentar ahora</a>
+    </main>
+    <script>
+      // Adónde volver: lo pone la ventana al cargar esta página. Solo se acepta
+      // una dirección https o localhost (desarrollo); cualquier otra cosa, nada.
+      const volver = new URLSearchParams(location.search).get("volver") ?? "";
+      const valida = /^(https:\/\/|http:\/\/localhost:\d+\/)/.test(volver);
+      const boton = document.getElementById("reintentar");
+      if (valida) boton.href = volver;
+
+      const ir = () => {
+        if (valida) location.href = volver;
+      };
+      window.addEventListener("online", ir);
+      // Por si el aviso de «online» no llega (red que vuelve sin cambiar de
+      // estado, o Vercel que se recupera): un intento cada 20 segundos.
+      setInterval(() => {
+        if (navigator.onLine) ir();
+      }, 20000);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,104 @@
+name: Copia de seguridad
+
+# El plan gratuito de Supabase no incluye copias de seguridad. Sin esto, un
+# borrado accidental sería irreversible.
+#
+# El volcado se cifra con GPG antes de subirse, porque los artefactos de
+# GitHub son descargables por cualquiera con acceso al repositorio.
+#
+# IMPORTANTE: una copia que nunca se ha restaurado no es una copia. Prueba la
+# restauración al menos una vez, contra un proyecto de Supabase de usar y tirar.
+
+on:
+  schedule:
+    - cron: "0 4 * * 0" # domingos a las 04:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dump:
+    runs-on: ubuntu-latest
+    steps:
+      # pg_dump se niega a volcar de un servidor más moderno que él, y el
+      # cliente que trae el runner suele ir por detrás del Postgres de Supabase.
+      - name: Instalar el cliente de PostgreSQL 17
+        run: |
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -sSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc \
+            https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] \
+            https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" \
+            | sudo tee /etc/apt/sources.list.d/pgdg.list > /dev/null
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-17
+
+      - name: Volcar y cifrar
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$BACKUP_PASSPHRASE" ]; then
+            echo "::error::Faltan los secretos SUPABASE_DB_URL o BACKUP_PASSPHRASE"
+            exit 1
+          fi
+          # Ruta completa a propósito: instalar el cliente 17 no cambia a qué
+          # apunta `pg_dump` en el PATH, que sigue siendo el 16 del runner, y
+          # pg_dump se niega a volcar de un servidor más moderno que él.
+          PG_DUMP=/usr/lib/postgresql/17/bin/pg_dump
+          "$PG_DUMP" --version
+
+          NAME="cartera-$(date -u +%Y-%m-%d).sql"
+          "$PG_DUMP" "$DATABASE_URL" \
+            --no-owner --no-privileges \
+            --schema=public --schema=private \
+            --file="$NAME"
+          gpg --batch --yes --symmetric --cipher-algo AES256 \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --output "$NAME.gpg" "$NAME"
+          rm -f "$NAME"
+          ls -lh "$NAME.gpg"
+          echo "ARTIFACT_NAME=$NAME.gpg" >> "$GITHUB_ENV"
+
+      # Una copia que nunca se ha abierto no es una copia. Se descifra aquí
+      # mismo y se comprueba que dentro está de verdad el esquema, no un fichero
+      # vacío o truncado. Si esto falla, la copia NO se sube: mejor un fallo
+      # ruidoso hoy que descubrirlo el día que haya que restaurar.
+      - name: Comprobar que la copia se puede abrir y trae el esquema
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          gpg --batch --yes --quiet --decrypt \
+            --passphrase "$BACKUP_PASSPHRASE" \
+            --output comprobacion.sql "$ARTIFACT_NAME"
+
+          fallos=0
+          for objeto in \
+            "CREATE TABLE public.transaction" \
+            "CREATE TABLE public.account" \
+            "CREATE TABLE public.category" \
+            "CREATE VIEW public.v_account_balance" \
+            "CREATE POLICY transaction_sel" \
+            "tx_reimburses_only_income"
+          do
+            if ! grep -qF "$objeto" comprobacion.sql; then
+              echo "::error::La copia no contiene: $objeto"
+              fallos=$((fallos + 1))
+            fi
+          done
+
+          lineas=$(wc -l < comprobacion.sql)
+          echo "La copia descifra correctamente: $lineas líneas de SQL."
+          if [ "$lineas" -lt 200 ] || [ "$fallos" -gt 0 ]; then
+            echo "::error::La copia no parece completa"
+            exit 1
+          fi
+          rm -f comprobacion.sql
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: ${{ env.ARTIFACT_NAME }}
+          path: ${{ env.ARTIFACT_NAME }}
+          retention-days: 90
+          if-no-files-found: error

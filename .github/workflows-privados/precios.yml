@@ -1,0 +1,66 @@
+name: Actualizar precios
+
+# Descarga los cierres de los fondos, ETF y acciones que siguen las posiciones
+# (Yahoo Finance) y los tipos de cambio del BCE. La ruta pide siempre los
+# últimos días con solape y guarda con upsert, así que ejecutarla de más es
+# inofensivo: no duplica nada.
+#
+# Dos veces cada día laborable (los cron de GitHub van en UTC):
+#
+#   · 06:30 UTC (08:30 en Madrid en verano, 07:30 en invierno). Los fondos
+#     publican su valor liquidativo con un día hábil de retraso: el cierre del
+#     lunes aparece en Yahoo entre la noche del lunes y la mañana del martes.
+#     A esta hora ya está el de la víspera y el del cierre americano de anoche.
+#   · 17:30 UTC (19:30 / 18:30 en Madrid). Las bolsas europeas ya han cerrado,
+#     el BCE publicó a las 16:00 (hora central europea) el cambio del día, y
+#     algunos fondos ya han publicado el del día. Las acciones americanas aún
+#     cotizan: se guarda el precio del momento y la pasada de la mañana
+#     siguiente lo sustituye por el cierre.
+#
+# Sábado y domingo no hay mercado, así que no se ejecuta; el lunes por la
+# mañana recoge el viernes de los fondos con el solape.
+#
+# Usa los MISMOS secretos que el envío de avisos: APP_URL y NOTIFY_SECRET, el
+# secreto de las tareas programadas. No hay que crear ninguno nuevo.
+
+on:
+  schedule:
+    - cron: "30 6 * * 1-5"
+    - cron: "30 17 * * 1-5"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  actualizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pedir la actualización de precios
+        env:
+          URL: ${{ secrets.APP_URL }}
+          SECRETO: ${{ secrets.NOTIFY_SECRET }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$SECRETO" ]; then
+            echo "::error::Faltan los secretos APP_URL o NOTIFY_SECRET"
+            exit 1
+          fi
+
+          respuesta=$(curl -sS --max-time 90 -w "\n%{http_code}" -X POST "$URL/api/precios" \
+            -H "Authorization: Bearer $SECRETO")
+
+          cuerpo=$(echo "$respuesta" | head -n -1)
+          codigo=$(echo "$respuesta" | tail -n 1)
+
+          echo "$cuerpo"
+
+          if [ "$codigo" != "200" ]; then
+            echo "::error::La ruta de precios devolvió $codigo"
+            exit 1
+          fi
+
+          # Un símbolo que falla no tumba la ejecución (los demás sí se han
+          # guardado), pero se deja a la vista.
+          if echo "$cuerpo" | grep -q '"ok":false'; then
+            echo "::warning::Algún precio o tipo de cambio no se ha podido actualizar (ver el resumen)"
+          fi

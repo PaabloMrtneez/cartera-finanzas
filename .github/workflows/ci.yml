@@ -1,0 +1,75 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Comprobar tipos
+        run: npm run typecheck
+
+      - name: Tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      # La clave secreta de Supabase salta la seguridad por filas: si acabara en
+      # el paquete que descarga el navegador, cualquiera podría leer los datos
+      # de los cuatro usuarios.
+      #
+      # Se busca una clave DE VERDAD (el prefijo más material aleatorio), no el
+      # prefijo suelto: la propia librería supabase-js contiene la cadena
+      # "sb_secret_" en una función que comprueba el formato de las claves, y
+      # buscar solo el prefijo daba un falso positivo en cada build.
+      - name: Ninguna clave secreta en el paquete del cliente
+        run: |
+          if grep -rElZ 'sb_secret_[A-Za-z0-9_-]{16,}' .next/static/ 2>/dev/null | grep -qz .; then
+            echo "::error::Se ha encontrado una clave secreta en el paquete del cliente"
+            grep -rEl 'sb_secret_[A-Za-z0-9_-]{16,}' .next/static/
+            exit 1
+          fi
+          echo "Paquete del cliente limpio."
+
+      # El grep de arriba solo pilla el formato NUEVO `sb_secret_`. Una
+      # service_role en formato JWT heredado (eyJ...) empieza igual que la anon,
+      # que sí es pública y vive legítimamente en el bundle; lo que las separa es
+      # el claim `role`. Este scanner decodifica cada JWT y falla solo si el rol
+      # es service_role, así que no da falso positivo con la anon.
+      - name: Ninguna clave service_role (JWT heredado) en el paquete del cliente
+        run: node scripts/comprobar-bundle-cliente.mjs .next/static
+
+      # Complementario y más difícil de burlar: que ningún componente de cliente
+      # llegue siquiera a nombrar la variable de la clave secreta.
+      - name: Ningún componente de cliente nombra la clave secreta
+        run: |
+          culpables=$(grep -rl "SUPABASE_SERVICE_ROLE_KEY" src/ 2>/dev/null | xargs -r grep -l '"use client"' || true)
+          if [ -n "$culpables" ]; then
+            echo "::error::Un componente de cliente referencia la clave secreta:"
+            echo "$culpables"
+            exit 1
+          fi
+          echo "Ningún componente de cliente la nombra."

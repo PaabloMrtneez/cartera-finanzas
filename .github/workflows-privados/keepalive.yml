@@ -1,0 +1,31 @@
+name: Mantener viva la base de datos
+
+# Supabase pausa los proyectos del plan gratuito tras 7 días sin actividad de
+# base de datos. Los datos no se pierden, pero la app queda caída hasta
+# reactivarla a mano desde el panel. Con cuatro usuarios de uso esporádico eso
+# pasaría de verdad, así que una consulta trivial cada dos días lo evita.
+#
+# Si esta tarea empieza a fallar, llegará un aviso por email de GitHub: no la
+# ignores, es lo único que mantiene la app en pie durante las vacaciones.
+
+on:
+  schedule:
+    - cron: "0 6 */2 * *" # cada dos días a las 06:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Consulta trivial contra Postgres
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "::error::Falta el secreto SUPABASE_DB_URL"
+            exit 1
+          fi
+          psql "$DATABASE_URL" -Atc "select now();"

@@ -1,0 +1,56 @@
+{
+  "name": "cartera-escritorio",
+  "productName": "Cartera",
+  "version": "1.0.0",
+  "description": "Cartera para Windows: una ventana propia que abre la app publicada.",
+  "author": "Pablo Martinez Conde",
+  "private": true,
+  "type": "module",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "local": "electron . --local",
+    "dist": "electron-builder --win nsis --x64"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "es.cartera.escritorio",
+    "productName": "Cartera",
+    "copyright": "Cartera · uso privado",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "sin-conexion.html",
+      "package.json"
+    ],
+    "asar": true,
+    "electronLanguages": ["es", "en-US"],
+    "electronFuses": {
+      "runAsNode": false,
+      "enableNodeOptionsEnvironmentVariable": false,
+      "enableNodeCliInspectArguments": false,
+      "enableCookieEncryption": true,
+      "enableEmbeddedAsarIntegrityValidation": true,
+      "onlyLoadAppFromAsar": true
+    },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "Cartera-Setup-${version}.exe",
+      "shortcutName": "Cartera",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

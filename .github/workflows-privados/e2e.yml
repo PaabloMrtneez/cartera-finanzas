@@ -1,0 +1,95 @@
+name: E2E
+
+# Las pruebas de extremo a extremo NECESITAN Supabase real: el arnés siembra un
+# estado determinista y entra con 2FA de verdad. Por eso corren aparte del CI de
+# lint/typecheck/test/build, y con un secreto que solo puede poner el dueño.
+#
+# ── USUARIO DEDICADO ────────────────────────────────────────────────────────
+# En CI el arnés usa `ci@cartera.local` (E2E_EMAIL, abajo), NO el `fase3` del dev
+# local ni el de los agentes: cada corrida le resetea el 2FA y la contraseña, así
+# que compartirlo pisaría una sesión ajena. El grupo de concurrencia serializa
+# las ejecuciones de la CI, y el cerrojo de `e2e/usuario.ts` hace esperar a
+# cualquier otra corrida sobre el mismo usuario. Ver e2e/README.md.
+#
+# ── CONTRA UN BUILD DE PRODUCCIÓN ──────────────────────────────────────────
+# Se compila con `next build` y se sirve con `next start` (E2E_WEB_COMMAND), no
+# con `next dev`: es lo que se despliega, y el modo dev compila cada ruta en la
+# primera visita y hace las pruebas lentas e inestables.
+#
+# ── EL SECRETO (imprescindible) ─────────────────────────────────────────────
+# Un secreto de repositorio, `DOTENV_LOCAL`, con el contenido íntegro de tu
+# `.env.local` (URL pública de Supabase, anon, service role y DATABASE_URL).
+# Desde la raíz del repo:
+#
+#     gh secret set DOTENV_LOCAL < .env.local
+#
+# o en GitHub: Settings → Secrets and variables → Actions → New repository secret.
+# Sin él, el paso que materializa `.env.local` deja el fichero vacío y el e2e
+# falla en el arranque.
+
+on:
+  # Al integrar en main, pero solo si cambió algo que el e2e pueda regresar
+  # (código, esquema, dependencias o el propio arnés). Un cambio de docs no lo
+  # dispara.
+  push:
+    branches: [main]
+    paths:
+      - "src/**"
+      - "e2e/**"
+      - "supabase/migrations/**"
+      - "package.json"
+      - "package-lock.json"
+      - "playwright.config.ts"
+      - "next.config.ts"
+      - ".github/workflows/e2e.yml"
+  # Y a mano, desde la pestaña Actions, cuando quieras validar sin empujar.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-supabase-compartido
+  cancel-in-progress: false
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      E2E_EMAIL: ci@cartera.local
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci
+
+      - name: Instalar el navegador de Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Materializar .env.local desde el secreto
+        env:
+          DOTENV_LOCAL: ${{ secrets.DOTENV_LOCAL }}
+        run: printf '%s' "$DOTENV_LOCAL" > .env.local
+
+      # Después de materializar .env.local: el build incrusta las NEXT_PUBLIC_*.
+      - name: Compilar
+        run: npm run build
+
+      - name: Pruebas e2e
+        env:
+          E2E_WEB_COMMAND: npm run start
+        run: npm run e2e
+
+      # Solo si falla, y poco tiempo: las trazas de Playwright llevan las cookies
+      # de sesión del usuario de CI. Sirven para depurar un fallo, no para guardarse.
+      - name: Guardar el informe de Playwright
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 3

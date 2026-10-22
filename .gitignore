@@ -1,0 +1,79 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files — los secretos nunca se suben, pero la plantilla sí
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Lighthouse: informes y artefactos de la auditoría de rendimiento (no se suben)
+/lighthouse/
+# Estado de sesión de las pruebas E2E: son cookies de sesión = credenciales
+/e2e/.auth/
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Enlace de acceso de un solo uso, generado a mano
+enlace-acceso.txt
+enlace-*.txt
+
+# Credenciales del usuario de prueba
+sesion-de-prueba.txt
+
+# Ficheros temporales de trabajo
+*.tmp
+
+# Skills de agentes instaladas con el CLI `skills` (herramienta de diseño, no
+# fuente del proyecto): el contenido y los symlinks no se suben.
+/.agents/
+/.claude/skills/
+/skills-lock.json
+
+# Capturas de exploración de diseño (no se suben)
+/.previews/
+
+# App de escritorio (Electron): dependencias e instaladores generados
+/escritorio/node_modules/
+/escritorio/dist/
+
+# Configuración local de Claude Code de cada uno: permisos y rutas de su equipo.
+/.claude/settings.local.json

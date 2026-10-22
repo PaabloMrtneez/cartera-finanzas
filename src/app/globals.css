@@ -1,0 +1,1239 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Identidad AURORA. Sustituye a crema, tinta y latón.
+
+   El cambio es deliberado y está acordado: la app pasa de la identidad editorial
+   (papel crema, tinta, un acento de latón) a «Aurora» —un modo OSCURO como
+   identidad principal: fondo espacio muy oscuro, materiales de cristal con
+   profundidad y un acento IRIDISCENTE violeta → cian → oro—. El objetivo es
+   «Apple × marca de lujo»: datos como protagonistas, superficies translúcidas,
+   movimiento rápido y premium.
+
+   QUÉ SE CONSERVA. Los NOMBRES de todos los tokens (`--bg`, `--surface`, `--fg`,
+   `--muted`, `--hairline`, `--accent*`, los semánticos, los `--ink*`…). Solo
+   cambia su VALOR. Así todas las pantallas heredan el re-pintado sin tocarlas: el
+   piloto de este despliegue es Resumen, pero el color llega a toda la app.
+
+   POR QUÉ CIAN COMO `--accent`. El acento de verdad es el GRADIENTE iridiscente
+   (`--grad-aurora`), que no es un color plano y no vale para un borde de foco, un
+   enlace o un estado activo. Para eso hace falta un color sólido, y el cian del
+   espectro (`#56D9D4`) es el que queda libre: el rojo, el verde y el violeta ya
+   son gasto, ingreso y traspaso, y el oro se reserva para la previsión. Un solo
+   acento: no vuelve el acento conmutable. Las ACCIONES PRINCIPALES (y el «+»)
+   no van en cian: son el botón negro con canto Aurora (`boton-aurora`).
+
+   DOS TEMAS. `:root` = Aurora CLARO (porcelana fría + el mismo acento), legible
+   pero secundario. `[data-theme="dark"]` = Aurora OSCURO, el héroe, donde va todo
+   el mimo (glows atmosféricos, cristal, brillo interior). El oscuro es además el
+   tema por defecto (ver `src/lib/theme.ts`).
+--------------------------------------------------------------------------- */
+
+:root {
+  /* --- Aurora CLARO: porcelana fría ------------------------------------- */
+  --bg: #eef1f7;
+  --surface: #fbfcfe;
+  --surface-2: #e7ebf3;
+  --fg: #121622;
+  --muted: #595f6e;
+  --hairline: #d7dce7;
+  --separator: #e4e8f0;
+
+  /* Los semánticos conservan su significado y pasan AA (≥4,5:1) sobre la
+     porcelana. Afinados hacia el frío de la paleta. */
+  --expense: #b23a33;
+  --income: #0a6b51;
+  --transfer: #5a4fc0;
+  --warning: #756009;
+  --uncat: #5c6270;
+
+  /* El acento sólido (cian), en dos tintas. `--accent` para RELLENOS y TRAZOS
+     (foco, estados activos, línea del gráfico); `--accent-text` para el cian como TEXTO o
+     enlace, la tinta que llega a 4,5:1 sobre la porcelana. Sobre un relleno de
+     acento la tinta es OSCURA (`--accent-ink`), que es lo que lee en un cian
+     claro —el blanco se quedaría en 3:1—. */
+  --accent: #12a7a0;
+  --accent-text: #0a7570;
+  --accent-ink: #042523;
+  --accent-soft: rgba(18, 167, 160, 0.12);
+
+  /* La «tinta» pasa a ser una losa de NOCHE Aurora: el bloque oscuro que
+     encabeza Patrimonio deja de ser un gris de informe y toma el fondo espacio,
+     para que incluso en tema claro esa banda pertenezca a la identidad. */
+  --ink: #0a0d17;
+  --ink-2: #141b28;
+  --ink-fg: #ecf1fb;
+  --ink-muted: rgba(236, 241, 251, 0.64);
+  --ink-hairline: rgba(165, 195, 245, 0.16);
+  --ink-accent: #5fe0da;
+
+  --chrome: rgba(238, 241, 247, 0.92);
+  --chrome-blur: none;
+
+  /* Etiqueta apagada que se apoya SOBRE el cristal de la barra (pestaña
+     inactiva). Sobre una porcelana translúcida `--muted` basta, pero se deja un
+     tono propio por si el cristal mezcla con algo más oscuro detrás. */
+  --chrome-muted: #4d5261;
+
+  /* --- Cristal (vale en los dos temas vía estos tokens) ----------------- */
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-sheen: rgba(255, 255, 255, 0.7);
+  --glass-shadow: 0 16px 40px -24px rgba(18, 22, 34, 0.2);
+
+  /* El velo bajo un diálogo o una hoja: oscurece el fondo para que la pieza
+     superpuesta lea. En claro es la tinta fría del texto a media opacidad; en
+     oscuro, un tono más hondo que el propio espacio (ver el tema oscuro). */
+  --scrim: rgba(18, 22, 34, 0.38);
+
+  /* --- El espectro Aurora: la FIRMA. Violeta → cian → oro --------------- */
+  /* Un gradiente, no un color: es el acento iridiscente. Se usa en la banda de
+     categorías, en rellenos de texto (`aurora-text`) y en chips. Vive en `:root`
+     y lo hereda el tema oscuro sin repetirlo. */
+  --grad-aurora: linear-gradient(90deg, #8b7bf0 0%, #48d4d0 52%, #e6c06a 100%);
+  --v-aurora: #8b7bf0;
+  --c-aurora: #48d4d0;
+  --g-aurora: #e6c06a;
+
+  /* --- La MARCA (los Anillos), versión CLARA ---------------------------
+     El icono de la app es de noche, y esa es la marca principal (la de los
+     iconos instalables). Dentro de la interfaz en tema claro la marca usa su
+     versión de porcelana: azulejo blanco con filete y los anillos en el
+     espectro un punto más hondo, para que el trazo fino no se lave sobre el
+     blanco. El tema oscuro la redefine abajo con la de noche. */
+  --marca-azulejo-alto: #ffffff;
+  --marca-azulejo-bajo: #eef2f8;
+  --marca-filete: #d3d9e6;
+  --marca-v: #7564e8;
+  --marca-c: #1fb0ab;
+  --marca-g: #d3a443;
+
+  /* Los peldaños del espectro, en orden violeta → cian → oro (con apoyos azul,
+     verde-agua, ámbar y rosa). La banda de categorías colorea cada segmento por
+     su POSICIÓN con estos tonos —no con el color suelto de cada categoría—, para
+     que el resultado sea siempre el degradado Aurora y nunca una mezcla turbia.
+     Son la firma: la misma escala vale en los dos temas, por eso viven en :root. */
+  --aurora-1: #8b7bf0;
+  --aurora-2: #6aa9e8;
+  --aurora-3: #48d4d0;
+  --aurora-4: #8de6c0;
+  --aurora-5: #e6c06a;
+  --aurora-6: #f0a85a;
+  --aurora-7: #f08bc0;
+  /* El neutro del segmento «Otros»: cuando hay más categorías de las que caben,
+     la cola se agrupa en uno gris-pizarra que se lee como «el resto», sin robarle
+     protagonismo a los peldaños del espectro. Vale en los dos temas. */
+  --aurora-otros: #6d7689;
+
+  /* --- El BOTÓN DE CALIDAD: negro con filete Aurora ---------------------
+     Las acciones principales (guardar, entrar, el «+», «Añadir movimiento»)
+     no son un relleno de color: son un cuerpo NEGRO con el espectro como canto,
+     como el botón negro de Apple. Es un MATERIAL, no un modo: el mismo negro en
+     los dos temas —sobre la porcelana se lee como el botón negro sobre blanco—,
+     por eso vive en `:root` y el oscuro no lo repite. Se aplica con la utilidad
+     `boton-aurora` (abajo); nadie pinta estos valores a mano.
+
+     El cuerpo lleva un degradado vertical levísimo (arriba algo más claro, como
+     si la luz viniera de encima) para que tenga volumen sin brillo de plástico.
+     Más oscuro que la superficie de las tarjetas del tema oscuro: el canto, no
+     el relleno, es lo que lo separa del fondo. */
+  --btn-negro: #05060b;
+  --btn-negro-alto: #0d1018;
+  /* Texto e icono: casi blanco frío. Sobre el negro pasa de 18:1. */
+  --btn-negro-fg: #f3f6fc;
+  /* El brillo interior del canto de arriba: una línea de luz, no un reflejo. */
+  --btn-brillo: rgba(255, 255, 255, 0.07);
+  /* El realce al pasar el ratón: una veladura clara sobre cuerpo y canto. */
+  --btn-realce: rgba(255, 255, 255, 0.07);
+  /* El canto de un botón deshabilitado: el espectro se apaga a un filete neutro. */
+  --btn-filete-apagado: rgba(165, 195, 245, 0.24);
+  /* El halo del espectro, SOLO para lo que flota (el «+» de la barra): tenue,
+     violeta a un lado y cian al otro, y una sombra corta que lo despega. */
+  --btn-halo:
+    -6px 6px 18px -10px rgba(139, 123, 240, 0.6), 6px 6px 18px -10px rgba(72, 212, 208, 0.5),
+    0 3px 10px -4px rgba(5, 6, 11, 0.45);
+
+  /* El radio de lo diminuto: badges, chips de texto y casillas de leyenda.
+     Antes cada uno inventaba el suyo (4, 6, 8 px). */
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-xl: 26px;
+
+  /* --- Movimiento: imita a iOS --------------------------------------------
+     Las transiciones de Cartera copian las de las apps de Apple, en velocidad y
+     en estilo. Estos tokens son la única fuente; no se escriben duraciones ni
+     curvas sueltas en los componentes.
+
+     `--ease-ios` es la curva del muelle de UIKit tal como la aproxima Vaul (la
+     hoja de iOS para la web): arranca rápido y asienta largo, sin rebote. Es la
+     de los empujes de navegación, las hojas y el indicador del segmentado. NO
+     es un ease-in: el 72 % del recorrido está hecho a mitad de tiempo. */
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Alias histórico: la misma curva con el nombre que ya usaba el código. */
+  --ease-drawer: var(--ease-ios);
+  /* Push/pop de navegación: la pantalla entra desde la derecha. Recorre el
+     ancho entero, y en iOS dura medio segundo; por eso no cabe en los 300 ms de
+     la UI pequeña. */
+  --dur-push: 500ms;
+  /* Hoja: sube con el muelle y baja algo más rápido, porque cerrar es
+     apartarla, no presentarla. */
+  --dur-sheet-in: 500ms;
+  --dur-sheet-out: 380ms;
+  /* Alerta / diálogo centrado (UIAlertController): llega desde 1,1 con
+     fundido y se va con un fundido corto. */
+  --dur-alert-in: 280ms;
+  --dur-alert-out: 170ms;
+  /* Al soltar un control pulsado. El resaltado al pulsar es instantáneo (0 ms):
+     en iOS la respuesta al dedo no se anima, solo la vuelta. */
+  --dur-soltar: 200ms;
+  /* La pastilla del control segmentado al deslizarse. */
+  --dur-segmento: 300ms;
+  /* Fundido cruzado de «Reducir movimiento»: lo que iOS pone en lugar de los
+     deslizamientos. */
+  --dur-fundido: 250ms;
+  /* Entradas y salidas de interfaz, con más carácter que las de serie de CSS. */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Para lo que se MUEVE por la pantalla (la pastilla del segmentado): peso. */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* Sombras frías, tintadas con la tinta del texto. En claro las cajas siguen
+     cerrándose con filete; la sombra es para lo que de verdad flota. */
+  --shadow-1: 0 1px 2px rgba(18, 22, 34, 0.05), 0 8px 24px rgba(18, 22, 34, 0.05);
+  --shadow-2: 0 18px 48px rgba(18, 22, 34, 0.18);
+
+  /* Lo que el navegador pinta por su cuenta —barras de desplazamiento, el
+     calendario de un <input type="date">, el reloj de uno de hora, los <select>
+     nativos— sigue a `color-scheme`. Sin declararlo, en el tema oscuro salían
+     en claro: la barra de scroll BLANCA de Windows sobre un diálogo oscuro y el
+     icono negro del calendario sobre un campo negro. Cada tema dice el suyo. */
+  color-scheme: light;
+  /* El pulgar de la barra de desplazamiento, en el apagado del tema y sobre
+     carril transparente: se nota sin ser una franja de otro material. Es una
+     propiedad heredada, así que vale para la página y para cada lista con scroll
+     (la paleta de búsqueda, el cuerpo de una hoja). */
+  scrollbar-color: color-mix(in srgb, var(--muted) 45%, transparent) transparent;
+}
+
+[data-theme="dark"] {
+  /* --- Aurora OSCURO: el fondo espacio y el héroe de la identidad -------- */
+  /* La marca de noche: la principal, la misma que los iconos instalables. */
+  --marca-azulejo-alto: var(--ink-2);
+  --marca-azulejo-bajo: var(--ink);
+  --marca-filete: var(--ink-hairline);
+  --marca-v: var(--v-aurora);
+  --marca-c: var(--c-aurora);
+  --marca-g: var(--g-aurora);
+  /* El espacio es casi negro (acabado Apple en OLED). La base cae a un negro con
+     un hilo frío; las superficies NO la siguen hasta el fondo, sino que se quedan
+     claramente elevadas sobre el vacío. Es a propósito: en negro, una tarjeta se
+     define por su RELLENO mate —no por el filete—, igual que las tarjetas de iOS.
+     Si la superficie se pega al fondo, el borde brillante carga todo el peso y el
+     corte se vuelve brusco; con la elevación justa, la tarjeta reposa en vez de
+     recortarse. */
+  --bg: #02040a;
+  --surface: #0e1320;
+  --surface-2: #161c2c;
+  --fg: #ecf1fb;
+  /* Muted legible: 7,9:1 sobre la superficie, muy por encima de AA, porque sobre
+     el cristal translúcido el fondo efectivo se aclara y conviene margen. */
+  --muted: #9fa8c0;
+  /* Sobre el negro, el filete es un SUSURRO, no un trazo. Un filete claro y
+     nítido recorta la tarjeta como una pegatina; bajándolo, el borde solo insinúa
+     dónde acaba la caja y es el relleno el que la sostiene (ver `--surface`). */
+  --hairline: rgba(158, 182, 236, 0.09);
+  --separator: rgba(158, 182, 236, 0.06);
+
+  /* Semánticos en su variante clara: sobre el espacio pasan AA de sobra. */
+  --expense: #f2857f;
+  --income: #53d9b0;
+  --transfer: #ac9bf5;
+  --warning: #e6c06a;
+  --uncat: #9fa8c0;
+
+  /* El cian, aclarado para el oscuro. Sobre un relleno de acento la tinta es
+     muy oscura (casi la del espacio). */
+  --accent: #56d9d4;
+  --accent-text: #5fe0da;
+  --accent-ink: #06101a;
+  --accent-soft: rgba(86, 217, 212, 0.16);
+
+  --ink: #0a0d17;
+  --ink-2: #141b28;
+  --ink-fg: #ecf1fb;
+  --ink-muted: rgba(236, 241, 251, 0.64);
+  --ink-hairline: rgba(165, 195, 245, 0.16);
+  --ink-accent: #5fe0da;
+
+  --chrome: rgba(10, 13, 23, 0.7);
+  --chrome-blur: none;
+
+  /* Sobre el cristal oscuro de la barra, la etiqueta apagada va más CLARA. */
+  --chrome-muted: #b6becf;
+
+  /* Cristal oscuro: translúcido azulado, brillo interior arriba y sombra honda
+     para que las piezas de cristal floten de verdad sobre el espacio. La base se
+     sube hasta reposar al nivel de una tarjeta mate (`--surface`): sobre el negro,
+     un 0,06 apenas levantaba y la pieza de cristal se leía más plana que sus
+     vecinas sólidas. El desenfoque, el brillo y la sombra la siguen distinguiendo
+     como lo que de verdad flota. */
+  --glass-bg: rgba(150, 175, 225, 0.1);
+  --glass-sheen: rgba(190, 210, 255, 0.12);
+  --glass-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.85);
+
+  /* En oscuro el velo baja por debajo del espacio: un casi-negro frío que hunde
+     el fondo y deja flotar la hoja. */
+  --scrim: rgba(2, 4, 10, 0.6);
+
+  /* En oscuro las cajas también se cierran con filete: la sombra de tarjeta se
+     apaga y queda la sombra honda solo para lo superpuesto. */
+  --shadow-1: none;
+  --shadow-2: 0 24px 64px rgba(0, 0, 0, 0.66);
+
+  color-scheme: dark;
+}
+
+/* --- Cristal real: solo si el navegador soporta el desenfoque ------------ */
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  :root {
+    --chrome: rgba(238, 241, 247, 0.72);
+    --chrome-blur: blur(20px) saturate(180%);
+  }
+  [data-theme="dark"] {
+    --chrome: rgba(10, 13, 23, 0.62);
+    --chrome-blur: blur(22px) saturate(1.4);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Puente hacia Tailwind. `inline` hace que las utilidades apunten a la variable
+   en tiempo de ejecución: eso es lo que permite cambiar de tema sin recompilar.
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-chrome-muted: var(--chrome-muted);
+  --color-hairline: var(--hairline);
+  --color-separator: var(--separator);
+  --color-scrim: var(--scrim);
+
+  --color-expense: var(--expense);
+  --color-income: var(--income);
+  --color-transfer: var(--transfer);
+  --color-warning: var(--warning);
+  --color-uncat: var(--uncat);
+
+  --color-accent: var(--accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-ink: var(--accent-ink);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-fg: var(--ink-fg);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-hairline: var(--ink-hairline);
+  --color-ink-accent: var(--ink-accent);
+
+  --radius-xs: var(--r-xs);
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --shadow-card: var(--shadow-1);
+  --shadow-overlay: var(--shadow-2);
+
+  --ease-sheet: var(--ease-drawer);
+  --ease-ui: var(--ease-out);
+  --ease-move: var(--ease-in-out);
+
+  /* Interfaz: Inter, autoalojada por next/font (ver `src/app/layout.tsx`). La
+     variable `--font-inter` la expone el <html>; aquí se le dan los respaldos de
+     sistema por si la fuente aún no cargó. */
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  /* CIFRAS y display: Space Grotesk, también autoalojada. Sustituye a la serif
+     de sistema: en una app de dinero los números son el contenido, y una grotesca
+     geométrica de cifras tabulares los convierte en la pieza de diseño. Antes se
+     evitaba una fuente web por el peso del primer arranque; aquí se acepta por
+     identidad, y next/font la sirve desde el propio dominio sin petición externa. */
+  --font-cifra: var(--font-space-grotesk), "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+
+  /* La hoja de un diálogo en móvil y su velo, en paralelo y con el muelle de
+     iOS. La entrada se rellena hacia ATRÁS (`backwards`), no `both`: al acabar
+     suelta el `transform`, y así el arrastre para cerrar puede mover la hoja con
+     un estilo en línea (una animación con `both` lo pisaría para siempre). */
+  --animate-sheet-in: om-sheet-in var(--dur-sheet-in) var(--ease-ios) backwards;
+  --animate-sheet-out: om-sheet-out var(--dur-sheet-out) var(--ease-ios) both;
+  --animate-scrim-in: om-fade-in var(--dur-sheet-in) var(--ease-ios) backwards;
+  --animate-scrim-out: om-fade-out var(--dur-sheet-out) var(--ease-ios) both;
+  /* El diálogo centrado de escritorio, como una alerta de iOS. */
+  --animate-alert-in: om-alert-in var(--dur-alert-in) var(--ease-out) backwards;
+  --animate-alert-out: om-fade-out var(--dur-alert-out) var(--ease-out) both;
+  --animate-fade-out: om-fade-out 150ms var(--ease-out) both;
+  --animate-fade-in: om-fade-in 200ms var(--ease-out) both;
+  --animate-bar-grow: om-bar-grow 320ms var(--ease-out) both;
+  /* La hermana horizontal: una barra de proporción se llena desde su origen
+     izquierdo, y por eso quien la use debe poner también `origin-left`. La usa la
+     banda Aurora, segmento a segmento, con un escalonado de 30–80 ms. */
+  --animate-bar-fill: om-bar-fill 420ms var(--ease-out) both;
+  --animate-pulse-soft: om-pulse 1200ms ease-in-out infinite;
+  --animate-chart-in: om-chart-in 420ms var(--ease-out) both;
+  --animate-progress: om-progress 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  /* Entrada en cascada de los bloques héroe de una pantalla: un empujón corto
+     desde abajo con fundido. Recorre poco (14 px), así que cabe en 300 ms; el
+     escalonado lo pone quien la usa con `animation-delay`. */
+  --animate-rise: om-rise 300ms var(--ease-out) both;
+  /* El TRAZO que se dibuja al entrar, solo en el gráfico héroe de cada
+     pantalla. Recorre todo el ancho del gráfico —media pantalla o más—, así
+     que pasa de los 300 ms, pero se queda contenido: es un gesto, no una
+     espera. El trazo lleva `pathLength=1` y `stroke-dasharray: 1`, y lo que se
+     anima es el desfase del guion. */
+  --animate-trazo: om-trazo 640ms var(--ease-out) both;
+  /* El halo del punto de oro del presente. Late en OPACIDAD, sin escala: un
+     faro tranquilo, no un pulso que reclame la vista. */
+  --animate-halo: om-halo 2600ms ease-in-out infinite;
+}
+
+/* --- Keyframes ----------------------------------------------------------- */
+
+@keyframes om-sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+/* Sale desde donde la dejó el dedo: si se arrastró para cerrar, `--arrastre`
+   lleva lo ya recorrido y la hoja sigue bajando sin saltar arriba primero. */
+@keyframes om-sheet-out {
+  from {
+    transform: translateY(var(--arrastre, 0px));
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+/* `--opacidad-salida` es para el velo de una hoja arrastrada: ya iba medio
+   transparente y el fundido de cierre debe seguir desde ahí. */
+@keyframes om-fade-out {
+  from {
+    opacity: var(--opacidad-salida, 1);
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes om-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* La alerta de iOS: llega desde un poco más GRANDE (1,1), como si se acercara
+   al cristal, y asienta. Nunca desde 0: nada en el mundo nace de la nada. */
+@keyframes om-alert-in {
+  from {
+    opacity: 0;
+    transform: scale(1.1);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes om-bar-grow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+@keyframes om-bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes om-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+/* El barrido del gráfico. Los bordes de arriba, abajo y el final se dejan 24 px
+   por FUERA de la caja: el recorte que queda puesto al acabar (`both`) no debe
+   cortar el halo del punto final cuando cae en el borde. */
+@keyframes om-chart-in {
+  from {
+    clip-path: inset(-24px 100% -24px -24px);
+  }
+  to {
+    clip-path: inset(-24px -24px -24px -24px);
+  }
+}
+@keyframes om-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+@keyframes om-brillo {
+  from {
+    transform: translateX(-100%);
+  }
+  /* La pasada acaba al 75 % y el último cuarto es pausa. */
+  75%,
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes om-trazo {
+  from {
+    stroke-dashoffset: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes om-halo {
+  0%,
+  100% {
+    opacity: 0.12;
+  }
+  50% {
+    opacity: 0.38;
+  }
+}
+@keyframes om-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Fondo: el espacio con glows atmosféricos.
+
+   En OSCURO el fondo no es plano: lleva dos resplandores radiales muy suaves
+   —violeta arriba a la izquierda, cian arriba a la derecha— que dan profundidad
+   de «nebulosa». Van en una capa fija detrás del contenido (`body::after`,
+   para que no se desplacen al hacer scroll) y por detrás del grano. En CLARO, un eco mínimo de los mismos
+   para que la porcelana no sea un folio muerto.
+--------------------------------------------------------------------------- */
+
+/* Los resplandores van en un token para que la instantánea de una pantalla en
+   plena transición (ver «Transiciones de pantalla») pueda llevar el MISMO fondo
+   que el <body> y no se note el cambio al acabar. */
+[data-theme="dark"] {
+  --resplandores:
+    radial-gradient(90% 55% at 12% -8%, rgba(139, 123, 240, 0.16), transparent 55%),
+    radial-gradient(85% 50% at 100% 2%, rgba(72, 212, 208, 0.11), transparent 55%);
+}
+
+[data-theme="light"] {
+  --resplandores:
+    radial-gradient(80% 45% at 10% -6%, rgba(139, 123, 240, 0.06), transparent 55%),
+    radial-gradient(75% 42% at 100% 0%, rgba(18, 167, 160, 0.05), transparent 55%);
+}
+
+/* Los resplandores, en una capa FIJA por detrás de todo, no en el fondo del
+   body con `background-attachment: fixed`: ese fondo fijo obliga a Chrome en
+   Android a repintar la página entera en cada fotograma de scroll. Una capa
+   fija propia se compone una vez y se queda quieta. Mismo aspecto: el color
+   va en el body (que lo pasa al lienzo) y la capa, con `z-index: -1`, queda
+   entre el lienzo y el contenido. */
+[data-theme="dark"] body,
+[data-theme="light"] body {
+  background: var(--bg);
+}
+
+[data-theme="dark"] body::after,
+[data-theme="light"] body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--resplandores);
+}
+
+/* ---------------------------------------------------------------------------
+   Grano. Separa una superficie plana de una que parece material. Va en un
+   pseudoelemento fijo sobre el fondo, con poca opacidad. En oscuro se baja: sobre
+   el espacio, el mismo grano del papel haría demasiado ruido.
+--------------------------------------------------------------------------- */
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+[data-theme="dark"] body::before {
+  opacity: 0.035;
+}
+
+/* ---------------------------------------------------------------------------
+   Utilidades propias.
+--------------------------------------------------------------------------- */
+
+/* Filetes de 0,5 px. Nombradas SIN prefijo `border-` para que tailwind-merge no
+   las confunda con un color de borde y las elimine. Se usan junto a un color:
+   `hair border-hairline`. */
+@utility hair {
+  border-width: 0.5px;
+}
+@utility hair-t {
+  border-top-width: 0.5px;
+}
+@utility hair-b {
+  border-bottom-width: 0.5px;
+}
+@utility hair-l {
+  border-left-width: 0.5px;
+}
+@utility hair-r {
+  border-right-width: 0.5px;
+}
+
+/* Cristal de la barra superior, la de pestañas y los scrims. El desenfoque va
+   con valores literales y no con var(--chrome-blur): Tailwind 4 descarta las
+   declaraciones de backdrop-filter cuando su valor es una variable. */
+@utility glass {
+  background: var(--chrome);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  transform: translateZ(0);
+}
+
+/* ---------------------------------------------------------------------------
+   Tarjeta de CRISTAL: la pieza nueva de Aurora para lo que de verdad flota (la
+   tarjeta de previsión con su anillo, la hoja de categoría). Translúcida, con
+   desenfoque, filete claro, brillo interior arriba y sombra honda. El radio NO
+   va aquí: lo pone quien la usa con `rounded-*`, para reutilizarla a cualquier
+   tamaño. Degrada con gracia sin desenfoque: queda la translucidez y el filete.
+--------------------------------------------------------------------------- */
+@utility glass-card {
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  backdrop-filter: blur(18px) saturate(1.4);
+  border: 0.5px solid var(--hairline);
+  box-shadow: var(--glass-shadow), inset 0 1px 0 var(--glass-sheen);
+}
+
+/* Relleno de texto IRIDISCENTE con el espectro Aurora. Solo para acentos
+   pequeños (un dato, una etiqueta): la cifra héroe va en `--fg`, que es lo que
+   se lee. El `color: transparent` deja ver el gradiente recortado al texto. */
+@utility aurora-text {
+  background-image: var(--grad-aurora);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Respuesta al pulsar, como en iOS: los botones y las filas NO encogen, se
+   RESALTAN. El resaltado entra en 0 ms —es la respuesta al dedo y no se anima—
+   y al soltar vuelve en `--dur-soltar`. El encogido (`scale 0.97`) se reserva
+   para lo que tiene cuerpo de objeto: el botón redondo de añadir. */
+@utility pulsable {
+  transition: opacity var(--dur-soltar) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+
+  /* El hover va AQUÍ y antes del :active, con la misma especificidad, para que
+     al hacer clic con el ratón encima gane el pulsado. Tras `(hover: hover)`:
+     en un táctil un hover se queda pegado después del toque. */
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      opacity: 0.9;
+    }
+  }
+
+  &:active {
+    opacity: 0.6;
+    transition-duration: 0ms;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   El BOTÓN DE CALIDAD: la acción principal. Cuerpo negro, texto blanco y un
+   canto de 1 px con el espectro Aurora (violeta → cian → oro). Lo llevan la
+   variante primaria de `Button`, el «+» de la barra y «Añadir movimiento».
+
+   EL CANTO, sin pseudoelementos ni máscaras: DOBLE FONDO sobre un borde
+   transparente. La primera capa (el cuerpo) se recorta a la caja de relleno, la
+   segunda (el espectro) a la del borde, y el borde de 1 px transparente deja ver
+   la segunda solo en ese anillo. Sigue al `border-radius` de quien la use (el
+   radio lo pone el botón, no esta utilidad) y no se descuadra en ninguna escala.
+
+   EL REALCE (solo con ratón) es una veladura clara en un pseudoelemento que
+   cubre cuerpo y canto (`inset: -1px`, mismo radio exacto) y se funde con
+   OPACIDAD, en `--dur-soltar`. Va por debajo del texto: `isolation` crea el
+   contexto y el `z-index: -1` lo deja sobre los fondos del botón pero bajo su
+   contenido. Quien la use debe ser `relative` (los botones ya lo son).
+
+   EL PULSADO no es cosa de esta utilidad: es el resaltado de opacidad de
+   `pulsable` (o el encogido del «+»). Aquí solo se anula el 0,9 del hover de
+   `pulsable`, que sobre un negro apenas se veía y pelearía con la veladura.
+--------------------------------------------------------------------------- */
+@utility boton-aurora {
+  isolation: isolate;
+  color: var(--btn-negro-fg);
+  border: 1px solid transparent;
+  background:
+    linear-gradient(180deg, var(--btn-negro-alto), var(--btn-negro)) padding-box,
+    var(--grad-aurora) border-box;
+  /* `--boton-halo` lo enciende solo lo que flota (el «+»). */
+  box-shadow: var(--boton-halo, 0 0 #0000), inset 0 1px 0 var(--btn-brillo);
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--btn-realce);
+    opacity: 0;
+    transition: opacity var(--dur-soltar) var(--ease-out);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover::before {
+      opacity: 1;
+    }
+    /* Más específico que el `:hover` de `pulsable` y sin tocar su `:active`. */
+    &:hover:not(:active) {
+      opacity: 1;
+    }
+  }
+
+  /* Deshabilitado: el espectro se apaga a un filete neutro; la opacidad baja la
+     pone el botón (`disabled:opacity-40`). */
+  &:disabled,
+  &[aria-disabled="true"] {
+    background:
+      linear-gradient(180deg, var(--btn-negro-alto), var(--btn-negro)) padding-box,
+      linear-gradient(var(--btn-filete-apagado), var(--btn-filete-apagado)) border-box;
+  }
+}
+
+/* La fila de una lista (UITableViewCell): al pulsar se le enciende el fondo de
+   resaltado, y al soltar se apaga. Sin tocar la opacidad del texto. */
+@utility fila-pulsable {
+  transition: background-color var(--dur-soltar) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+
+  &:active {
+    background-color: var(--surface-2);
+    transition-duration: 0ms;
+  }
+}
+
+/* Esqueleto de carga: la superficie secundaria con un brillo que la cruza. El
+   brillo es un pseudoelemento que se DESPLAZA (transform), no un gradiente que
+   se repinta, así que va por la GPU. Muy tenue —un reflejo de cristal, no un
+   foco—, y con una pausa al final de cada pasada para que no se lea nervioso. */
+@utility esqueleto {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--surface-2);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      100deg,
+      transparent 20%,
+      color-mix(in srgb, var(--fg) 7%, transparent) 50%,
+      transparent 80%
+    );
+    animation: om-brillo 1600ms var(--ease-in-out) infinite;
+  }
+}
+
+/* Dentro de la tinta (la losa de noche Aurora de Patrimonio) los tokens se dan
+   la vuelta: todo lo que vive dentro se adapta solo, sin repintarle una clase.
+   Aquí solo se mantiene compilando y legible; Patrimonio se rehará en su propio
+   despliegue. */
+@utility en-tinta {
+  --fg: var(--ink-fg);
+  --muted: var(--ink-muted);
+  --hairline: var(--ink-hairline);
+  --separator: var(--ink-hairline);
+  --surface: var(--ink);
+  --surface-2: var(--ink-2);
+  --accent: var(--ink-accent);
+  --accent-text: var(--ink-accent);
+  --accent-soft: rgba(95, 224, 218, 0.16);
+  --accent-ink: var(--ink);
+  /* Los semánticos toman su variante clara, que sobre la losa oscura pasa AA. */
+  --expense: #f2857f;
+  --income: #53d9b0;
+  --transfer: #ac9bf5;
+  --warning: #e6c06a;
+  --uncat: #9fa8c0;
+  /* El cristal, dentro de la losa, se ancla al claro para que no desaparezca. */
+  --glass-bg: rgba(150, 175, 225, 0.06);
+  --glass-sheen: rgba(190, 210, 255, 0.12);
+  /* Lo nativo que caiga dentro (un select, la barra de scroll) también, oscuro. */
+  color-scheme: dark;
+  color: var(--ink-fg);
+}
+
+/* ---------------------------------------------------------------------------
+   La LOSA AURORA: la tarjeta héroe de Patrimonio.
+
+   Antes era una banda oscura a sangre («losa de noche») que se quedaba oscura
+   también en el tema claro y, sin canto, se leía como una imagen pegada. Ahora
+   es una TARJETA como las demás —filete y radio de los tokens, superficie del
+   tema— con un amanecer del espectro en su canto superior que la distingue
+   como la pieza principal: violeta a la izquierda, cian a la derecha. Sigue al
+   tema: en claro el amanecer va más suave sobre la porcelana.
+--------------------------------------------------------------------------- */
+:root {
+  --losa-amanecer:
+    radial-gradient(70% 120% at 0% 0%, rgba(139, 123, 240, 0.14), transparent 70%),
+    radial-gradient(60% 110% at 100% 0%, rgba(72, 212, 208, 0.1), transparent 70%);
+}
+[data-theme="dark"] {
+  --losa-amanecer:
+    radial-gradient(70% 120% at 0% 0%, rgba(139, 123, 240, 0.24), transparent 70%),
+    radial-gradient(60% 110% at 100% 0%, rgba(72, 212, 208, 0.14), transparent 70%);
+}
+@utility losa-aurora {
+  background: var(--losa-amanecer), var(--surface);
+}
+
+/* ---------------------------------------------------------------------------
+   Área de toque de 44 px sin cambiar lo que se ve.
+
+   Un botón de icono de 34 px o una flecha de 36 se dibujan pequeños a
+   propósito —en una fila densa, un cuadrado de 44 pesaría más que su
+   contenido—, pero el DEDO necesita 44 (Apple HIG). Un pseudoelemento centrado,
+   transparente, de al menos 44 × 44, recibe el toque por él. Quien lo use debe
+   ser `relative` (o `absolute`): esta utilidad no fija la posición para no
+   pisarla.
+--------------------------------------------------------------------------- */
+@utility toque {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+/* La cifra héroe de cada pantalla: la grotesca de display, con números de ancho
+   fijo y el interletrado apretado que pide un cuerpo grande. */
+@utility cifra {
+  font-family: var(--font-cifra);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+/* La cifra HÉROE: el precio-título que encabeza cada pantalla (Gasto del mes,
+   Valor invertido, Patrimonio neto, Total en cuentas…). Un ÚNICO tamaño, grosor
+   e interletrado para todas —antes cada pantalla elegía el suyo (de 40 a 80 px,
+   unas en 600 y otras heredando 400) y la cifra bailaba de una a otra—. */
+@utility cifra-hero {
+  font-family: var(--font-cifra);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  /* Una cifra no se parte: «≈» solo en una línea y el importe en la siguiente
+     se leía como dos datos. */
+  white-space: nowrap;
+  /*
+    48 px, salvo que no quepa (hallazgo M-1). Cada carácter de Space Grotesk a
+    este grosor e interletrado ocupa 0,51 em: «123.456,78 €» (12 caracteres)
+    son 6,1 em, y a 320 px de ancho ya no cabía. El cuerpo es el ancho útil (la
+    ventana menos los 16 + 16 px del cuerpo de página) entre 6,2, con 48 de
+    techo: de 375 px en adelante no cambia nada, y a 320 baja a 46. La cifra
+    héroe siempre va a pelo en el cuerpo de la página, por eso vale medir
+    contra la ventana.
+
+    Para lo que ni así cabe —siete u ocho cifras, «−10.064.903,79 €»—,
+    `AjusteCifras` (components/app/ajuste-cifras.tsx) mide la cifra ya pintada
+    y la encoge lo justo. Aquí no se puede: CSS no sabe cuánto mide un texto.
+  */
+  font-size: min(48px, calc((100vw - 32px) / 6.2));
+  line-height: 1.083;
+
+  @media (min-width: 1024px) {
+    font-size: 64px;
+    line-height: 68px;
+  }
+}
+
+/* Las cifras de una TIRA de totales (Ingresos · Balance · Previsión en
+   Resumen). Como la héroe, encogen antes que desbordar: quien la usa deja en
+   `--n` cuántos caracteres suman las tres cifras, y el cuerpo es el ancho útil
+   de la tira (ventana − 32 del cuerpo − 32 de sangrías − 2 de filetes) entre lo
+   que miden, con 20 px de techo. Por debajo de ~15 px ya no se lee: quien la usa
+   pasa entonces la tira a filas (ver Resumen). */
+@utility cifra-tira {
+  font-family: var(--font-cifra);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+  /* En filas cada cifra tiene la línea para ella: quien la usa fija entonces
+     `--cifra-tira-cuerpo` (20 px) y no se encoge nada. */
+  font-size: var(
+    --cifra-tira-cuerpo,
+    max(13px, min(20px, calc((100vw - 66px) / (var(--n, 30) * 0.47))))
+  );
+  line-height: 28px;
+
+  @media (min-width: 1024px) {
+    font-size: 24px;
+    line-height: 36px;
+  }
+}
+
+/* Tinte suave de un color arbitrario, para fondos de icono redondo. */
+@utility tint-14 {
+  background: color-mix(in srgb, currentcolor 14%, transparent);
+}
+@utility tint-16 {
+  background: color-mix(in srgb, currentcolor 16%, transparent);
+}
+
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    /* La cabecera de cristal va pegada arriba: al saltar a un ancla o al
+       mover el foco con el tabulador, el navegador desplaza lo justo para que
+       el elemento quede DEBAJO de ella, no tapado. 56 px de barra más el área
+       segura del iPhone. */
+    scroll-padding-top: calc(56px + env(safe-area-inset-top));
+  }
+
+  /*
+    Sin rebote elástico en la página. En iOS, un scroll brusco que llega al
+    principio o al final sigue de largo y la página «rebota» (rubber-banding):
+    durante ese medio segundo el documento se desplaza más allá de sus bordes
+    y deja al descubierto una franja que no es documento. La barra de pestañas
+    está fija abajo y es de cristal (`backdrop-filter`), y el desenfoque de
+    WebKit solo tiene detrás lo que es documento: la parte de la barra que cae
+    sobre esa franja se pinta sin cristal y la barra se ve «cortada a la mitad»
+    (86 px de barra con el indicador de inicio; el rebote ronda la mitad). Quitando
+    el rebote no hay franja. En la app instalada no se pierde nada: no hay
+    «tirar para recargar». Solo el eje vertical: el horizontal es el gesto de
+    volver de algunos navegadores. Va en el <html> y en el <body> porque,
+    según el motor, el scroll de la página se atribuye a uno o al otro. Las
+    hojas y listas con scroll propio ya llevan `overscroll-contain`.
+  */
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  svg.lucide {
+    display: block;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: var(--r-sm);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   Transiciones de pantalla (View Transitions), con la gramática de iOS.
+
+   Quién decide qué: `direccionNavegacion` (src/lib/transicion.ts) calcula la
+   dirección y `PageTransition` la deja en `data-nav` del <html> antes de que el
+   navegador cree los pseudoelementos. Aquí solo se dice cómo se mueve cada caso.
+
+   · `ninguna` (cambio de pestaña, saltos laterales): nada. Seco, como iOS.
+   · `push`: la nueva entra desde la derecha (100 % → 0) con una sombra en su
+     canto izquierdo; la vieja se aparta un 30 % a la izquierda y se oscurece un
+     15 %. `pop`: exactamente lo inverso, con la saliente POR ENCIMA.
+   · `hoja-sube`: la hoja sube desde abajo y lo de detrás se oscurece en
+     paralelo. `hoja-baja`: baja algo más rápido y lo de detrás se aclara.
+
+   SOLO EN MÓVIL. En escritorio todo es la barra lateral, es decir, secciones
+   hermanas: cambio de pestaña, sin animación. Un deslizamiento de 1400 px de
+   ancho sería además un peaje que ningún Mac impone.
+
+   La duración es la de iOS (500 ms) y no los 300 de la UI pequeña: recorre la
+   pantalla entera. No retrasa nada: la capa de la transición deja pasar los
+   toques a la página real, que ya es la nueva.
+--------------------------------------------------------------------------- */
+
+::view-transition {
+  pointer-events: none;
+}
+
+/* La raíz no se funde: lo que no tiene nombre propio cambia en seco. Sin esto
+   el navegador cruzaría la página entera en 250 ms en CADA transición, también
+   en un cambio de pestaña. */
+::view-transition-group(root),
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-old(root) {
+  display: none;
+}
+
+/* La barra de pestañas: quieta y por encima de las pantallas que se cruzan,
+   como la UITabBar sobre un push. */
+::view-transition-group(barra-pestanas) {
+  animation: none;
+  z-index: 10;
+}
+::view-transition-old(barra-pestanas) {
+  display: none;
+}
+::view-transition-new(barra-pestanas) {
+  animation: none;
+}
+
+/* Lo que ninguna dirección anima, cambia en seco. */
+::view-transition-old(.pantalla-sale) {
+  animation: none;
+  display: none;
+}
+::view-transition-new(.pantalla-entra) {
+  animation: none;
+}
+
+@media (width < 1024px) {
+  /* Mientras se cruzan, cada pantalla lleva el fondo espacio entero —color y
+     resplandores, del tamaño de la ventana como en el <body>—, para que la que
+     va encima tape de verdad a la de debajo. */
+  :root:is([data-nav="push"], [data-nav="pop"], [data-nav="hoja-sube"], [data-nav="hoja-baja"])::view-transition-old(.pantalla-sale),
+  :root:is([data-nav="push"], [data-nav="pop"], [data-nav="hoja-sube"], [data-nav="hoja-baja"])::view-transition-new(.pantalla-entra) {
+    display: block;
+    background-color: var(--bg);
+    background-image: var(--resplandores, none);
+    background-size: 100vw 100vh;
+    background-repeat: no-repeat;
+  }
+
+  /* --- Push ------------------------------------------------------------ */
+  :root[data-nav="push"]::view-transition-old(.pantalla-sale) {
+    animation: om-se-aparta var(--dur-push) var(--ease-ios) both;
+  }
+  :root[data-nav="push"]::view-transition-new(.pantalla-entra) {
+    animation: om-entra-derecha var(--dur-push) var(--ease-ios) both;
+    box-shadow: var(--sombra-canto);
+  }
+
+  /* --- Pop: lo inverso, y la que se va encima ---------------------------
+     Con keyframes propios y NO con `animation-direction: reverse`: invertir
+     la dirección invierte también la curva, y el muelle (rápido al principio)
+     se convertía en un ease-in que tardaba en arrancar. */
+  :root[data-nav="pop"]::view-transition-group(.pantalla-sale) {
+    z-index: 1;
+  }
+  :root[data-nav="pop"]::view-transition-old(.pantalla-sale) {
+    animation: om-sale-derecha var(--dur-push) var(--ease-ios) both;
+    box-shadow: var(--sombra-canto);
+  }
+  :root[data-nav="pop"]::view-transition-new(.pantalla-entra) {
+    animation: om-vuelve var(--dur-push) var(--ease-ios) both;
+  }
+
+  /* --- Hoja ------------------------------------------------------------ */
+  :root[data-nav="hoja-sube"]::view-transition-old(.pantalla-sale) {
+    animation: om-velo var(--dur-sheet-in) var(--ease-ios) both;
+  }
+  :root[data-nav="hoja-sube"]::view-transition-new(.pantalla-entra) {
+    animation: om-sube var(--dur-sheet-in) var(--ease-ios) both;
+  }
+  :root[data-nav="hoja-baja"]::view-transition-group(.pantalla-sale) {
+    z-index: 1;
+  }
+  :root[data-nav="hoja-baja"]::view-transition-old(.pantalla-sale) {
+    animation: om-baja var(--dur-sheet-out) var(--ease-ios) both;
+  }
+  :root[data-nav="hoja-baja"]::view-transition-new(.pantalla-entra) {
+    animation: om-sin-velo var(--dur-sheet-out) var(--ease-ios) both;
+  }
+}
+
+:root {
+  /* La sombra del canto izquierdo de la pantalla que entra en un push: es lo
+     que dice que una hoja de papel pasa POR ENCIMA de la otra. */
+  --sombra-canto: -10px 0 28px -6px rgba(0, 0, 0, 0.32);
+}
+
+/* La que se aparta: un 30 % a la izquierda y un 15 % más oscura, el velo de
+   iOS. `brightness` y no un velo encima porque la instantánea no admite hijos;
+   es el único filtro de todo el sistema y dura medio segundo. */
+@keyframes om-se-aparta {
+  to {
+    transform: translateX(-30%);
+    filter: brightness(0.85);
+  }
+}
+@keyframes om-entra-derecha {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes om-sale-derecha {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes om-vuelve {
+  from {
+    transform: translateX(-30%);
+    filter: brightness(0.85);
+  }
+}
+@keyframes om-sube {
+  from {
+    transform: translateY(100%);
+  }
+}
+@keyframes om-baja {
+  to {
+    transform: translateY(100%);
+  }
+}
+@keyframes om-velo {
+  to {
+    filter: brightness(0.85);
+  }
+}
+@keyframes om-sin-velo {
+  from {
+    filter: brightness(0.85);
+  }
+}
+
+/* La cascada de entrada (`animate-rise`) es para la PRIMERA pintura de la
+   sesión, la de abrir la app. Una vez se navega dentro, `data-nav` existe y la
+   cascada se apaga: cambiar de pestaña en iOS es instantáneo, y un fundido con
+   desplazamiento en cada visita a Resumen sería justo lo que eso evita. Los
+   revelados de gráfico (`chart-in`, `bar-grow`) se quedan: esos explican el
+   dato, no decoran la llegada. */
+:root[data-nav] .animate-rise {
+  animation: none;
+}
+
+/* ---------------------------------------------------------------------------
+   Movimiento reducido: MENOS y MÁS SUAVE, no cero. Se va el desplazamiento; se
+   quedan los fundidos, que ayudan a entender qué cambió.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-property: opacity, background-color, color, border-color !important;
+    transition-duration: 120ms !important;
+  }
+
+  /* Las animaciones con recorrido, escalado o barrido pasan a un fundido. */
+  .animate-sheet-in,
+  .animate-alert-in,
+  .animate-fade-in,
+  .animate-scrim-in,
+  .animate-bar-grow,
+  .animate-bar-fill,
+  .animate-chart-in,
+  .animate-rise {
+    /* `backwards`, no `both`: al acabar, el fundido suelta la opacidad. Con
+       `both` se quedaba clavada en 1 y pisaba la opacidad en línea de quien la
+       usa —las barras que ceden al tocar otra dejaban de ceder—. */
+    animation: om-fade-in 120ms linear backwards !important;
+  }
+
+  .animate-sheet-out,
+  .animate-alert-out,
+  .animate-scrim-out,
+  .animate-fade-out {
+    animation: om-fade-out 120ms linear both !important;
+  }
+
+  /* El brillo del esqueleto se queda quieto (un barrido es desplazamiento) y la
+     superficie late en opacidad: la espera sigue leyéndose como espera. */
+  .esqueleto {
+    animation: om-pulse 1600ms ease-in-out infinite;
+  }
+  .esqueleto::after {
+    display: none;
+  }
+
+  /* Transiciones de pantalla: lo que iOS hace con «Reducir movimiento». Los
+     deslizamientos pasan a un fundido cruzado; el cambio de pestaña sigue seco.
+     Se funde la que va ENCIMA (la que entra en un push o una hoja, la que se va
+     en un pop) y la de debajo se queda quieta: así es un fundido limpio, sin
+     un instante con las dos a media opacidad. */
+  @media (width < 1024px) {
+    :root:is([data-nav="push"], [data-nav="hoja-sube"])::view-transition-new(.pantalla-entra) {
+      animation: om-fade-in var(--dur-fundido) var(--ease-out) both !important;
+      box-shadow: none;
+    }
+    :root:is([data-nav="pop"], [data-nav="hoja-baja"])::view-transition-old(.pantalla-sale) {
+      animation: om-fade-out var(--dur-fundido) var(--ease-out) both !important;
+      box-shadow: none;
+    }
+    :root:is([data-nav="push"], [data-nav="hoja-sube"])::view-transition-old(.pantalla-sale),
+    :root:is([data-nav="pop"], [data-nav="hoja-baja"])::view-transition-new(.pantalla-entra) {
+      animation: none !important;
+    }
+  }
+
+  .animate-pulse-soft,
+  .animate-progress {
+    animation: om-pulse 1600ms ease-in-out infinite !important;
+  }
+
+  /* El trazo héroe ya no se dibuja: aparece entero con un fundido. Y el halo
+     del presente se queda quieto, encendido a media luz. */
+  .animate-trazo {
+    stroke-dashoffset: 0;
+    animation: om-fade-in var(--dur-fundido) var(--ease-out) backwards !important;
+  }
+  .animate-halo {
+    animation: none !important;
+    opacity: 0.25;
+  }
+}
