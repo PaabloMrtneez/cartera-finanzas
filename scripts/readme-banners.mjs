@@ -69,6 +69,44 @@ const TEMAS = {
 /** El espectro de las categorías (`--aurora-1…7` y `--aurora-otros`). */
 const ESPECTRO = ["#8b7bf0", "#6aa9e8", "#48d4d0", "#8de6c0", "#e6c06a", "#f0a85a", "#f08bc0", "#6d7689"];
 
+// ── Textos, por idioma ─────────────────────────────────────────────────────
+
+/**
+ * El README tiene versión en inglés (README.md, la que GitHub enseña primero) y
+ * en español (README.es.md). Los banners con texto salen en los dos idiomas;
+ * los de inglés llevan `-en` en el nombre.
+ */
+const TEXTOS = {
+  es: {
+    ceja: "FINANZAS PERSONALES · APP PRIVADA",
+    lema: "Tus cuentas, tus gastos y tus inversiones en un solo sitio.",
+    tituloCabecera: "Cartera — finanzas personales, privadas y en un solo sitio",
+    cejaBanda: "LA FIRMA DE CARTERA",
+    tituloBanda: "La banda Aurora",
+    textoBanda: "El gasto del mes como un solo espectro: cada categoría, su tramo.",
+    aviso: "Datos de ejemplo",
+    partes: ["Vivienda", "Súper", "Transporte", "Restaurantes", "Ocio", "Suscripciones", "Salud", "Otros"],
+    altBanda: "La banda Aurora: el gasto del mes repartido por categorías (datos de ejemplo)",
+    video: "Vídeo de presentación",
+    pronto: "Próximamente",
+    altVideo: "Vídeo de presentación de Cartera — próximamente",
+  },
+  en: {
+    ceja: "PERSONAL FINANCE · PRIVATE APP",
+    lema: "Your accounts, your spending and your investments in one place.",
+    tituloCabecera: "Cartera — personal finance, private and in one place",
+    cejaBanda: "THE CARTERA SIGNATURE",
+    tituloBanda: "The Aurora band",
+    textoBanda: "The month’s spending as a single spectrum: each category, its own segment.",
+    aviso: "Sample data",
+    partes: ["Housing", "Groceries", "Transport", "Restaurants", "Leisure", "Subscriptions", "Health", "Other"],
+    altBanda: "The Aurora band: the month’s spending split by category (sample data)",
+    video: "Product walkthrough",
+    pronto: "Coming soon",
+    altVideo: "Cartera product walkthrough video — coming soon",
+  },
+};
+
 // ── Texto en trazos ─────────────────────────────────────────────────────────
 
 /**
@@ -206,7 +244,7 @@ const ESTILO_MARCA = `
 
 // ── Los banners ─────────────────────────────────────────────────────────────
 
-function cabecera(t) {
+function cabecera(t, x_) {
   const W = 1280;
   const H = 420;
   const card = tarjeta(t, W, H, "cab");
@@ -219,14 +257,14 @@ function cabecera(t) {
   const logo = marca(t, 96, 126, 168, "cab-m");
 
   const x = 316;
-  const ceja = trazo(F.medium, "FINANZAS PERSONALES · APP PRIVADA", x, 166, 17, { tracking: 3.2 });
+  const ceja = trazo(F.medium, x_.ceja, x, 166, 17, { tracking: 3.2 });
   const nombre = trazo(F.bold, "Cartera", x - 4, 260, 112);
-  const lema = trazo(F.regular, "Tus cuentas, tus gastos y tus inversiones en un solo sitio.", x, 312, 27);
+  const lema = trazo(F.regular, x_.lema, x, 312, 27);
 
   return documento(
     W,
     H,
-    "Cartera — finanzas personales, privadas y en un solo sitio",
+    x_.tituloCabecera,
     card.defs + luz.defs + filo.defs + logo.defs,
     `${card.fondo}
 <g clip-path="url(#cab)">${luz.cuerpo}${estrellas(t, W, H, 46)}${filo.cuerpo}</g>
@@ -239,7 +277,7 @@ ${card.filete}`,
   );
 }
 
-function banda(t) {
+function banda(t, x_) {
   const W = 1280;
   const H = 384;
   const card = tarjeta(t, W, H, "ban");
@@ -248,21 +286,12 @@ function banda(t) {
     ["v", 1100, 60, 360, 200],
   ]);
 
-  const ceja = trazo(F.medium, "LA FIRMA DE CARTERA", 64, 74, 16, { tracking: 3 });
-  const titulo = trazo(F.medium, "La banda Aurora", 64, 124, 40);
-  const texto = trazo(F.regular, "El gasto del mes como un solo espectro: cada categoría, su tramo.", 64, 162, 21);
-  const aviso = trazo(F.regular, "Datos de ejemplo", W - 64, 74, 17, { anchor: "end" });
+  const ceja = trazo(F.medium, x_.cejaBanda, 64, 74, 16, { tracking: 3 });
+  const titulo = trazo(F.medium, x_.tituloBanda, 64, 124, 40);
+  const texto = trazo(F.regular, x_.textoBanda, 64, 162, 21);
+  const aviso = trazo(F.regular, x_.aviso, W - 64, 74, 17, { anchor: "end" });
 
-  const partes = [
-    ["Vivienda", 32],
-    ["Súper", 20],
-    ["Transporte", 12],
-    ["Restaurantes", 11],
-    ["Ocio", 9],
-    ["Suscripciones", 7],
-    ["Salud", 5],
-    ["Otros", 4],
-  ];
+  const partes = [32, 20, 12, 11, 9, 7, 5, 4].map((pct, i) => [x_.partes[i], pct]);
   const x0 = 64;
   const anchoBarra = W - 128;
   const hueco = 3;
@@ -296,7 +325,7 @@ function banda(t) {
   return documento(
     W,
     H,
-    "La banda Aurora: el gasto del mes repartido por categorías (datos de ejemplo)",
+    x_.altBanda,
     `${card.defs}${luz.defs}<clipPath id="ban-barra"><rect x="${x0}" y="${y}" width="${anchoBarra}" height="${alto}" rx="${alto / 2}"/></clipPath>
 <linearGradient id="ban-luz" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset="0.5" stop-color="#fff" stop-opacity="0.55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>`,
     `${card.fondo}
@@ -328,7 +357,7 @@ function separador(t) {
   );
 }
 
-function video(t) {
+function video(t, x_) {
   const W = 1280;
   const H = 720;
   const card = tarjeta(t, W, H, "vid");
@@ -340,8 +369,8 @@ function video(t) {
   const filo = filoAurora(t, W, H, "vid");
   const logo = marca(t, 56, 52, 52, "vid-m", { dibuja: false });
   const nombre = trazo(F.bold, "Cartera", 124, 90, 30);
-  const titulo = trazo(F.medium, "Vídeo de presentación", W / 2, 492, 46, { anchor: "middle" });
-  const pronto = trazo(F.regular, "Próximamente", W / 2 - 14, 538, 24, { anchor: "middle" });
+  const titulo = trazo(F.medium, x_.video, W / 2, 492, 46, { anchor: "middle" });
+  const pronto = trazo(F.regular, x_.pronto, W / 2 - 14, 538, 24, { anchor: "middle" });
   const finPronto = W / 2 - 14 + pronto.ancho / 2;
   const cx = W / 2;
   const cy = 330;
@@ -349,7 +378,7 @@ function video(t) {
   return documento(
     W,
     H,
-    "Vídeo de presentación de Cartera — próximamente",
+    x_.altVideo,
     `${card.defs}${luz.defs}${filo.defs}${logo.defs}
 <linearGradient id="vid-anillo" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${t.v}"/><stop offset="0.5" stop-color="${t.c}"/><stop offset="1" stop-color="${t.g}"/></linearGradient>`,
     `${card.fondo}
@@ -403,15 +432,57 @@ ${card.filete}`,
   );
 }
 
+// ── Selector de idioma ──────────────────────────────────────────────────────
+
+/**
+ * Una píldora del selector «English | Español». GitHub no ejecuta JavaScript en
+ * un README, así que no puede haber un interruptor de verdad: son dos enlaces
+ * (uno a cada README) con forma de control segmentado. La activa es el botón
+ * principal de la app: cuerpo negro con canto Aurora, negro también en tema
+ * claro, así que vale para los dos. La otra, solo un filete y texto gris medio,
+ * legible sobre blanco y sobre negro.
+ */
+const SELECTOR = { en: "English", es: "Español" };
+const ANCHO_PILDORA = Math.ceil(Math.max(...Object.values(SELECTOR).map((n) => trazo(F.medium, n, 0, 0, 16).ancho))) + 48;
+
+function pildora(etiqueta, activa) {
+  const W = ANCHO_PILDORA;
+  const H = 40;
+  const texto = trazo(F.medium, etiqueta, W / 2, 26, 16, { anchor: "middle" });
+  const cuerpo = activa
+    ? `<rect x="0.75" y="0.75" width="${W - 1.5}" height="${H - 1.5}" rx="19.25" fill="#05060b" stroke="url(#canto)" stroke-width="1.5"/>
+${path(texto, `fill="#f3f6fc"`)}`
+    : `<rect x="0.75" y="0.75" width="${W - 1.5}" height="${H - 1.5}" rx="19.25" fill="none" stroke="#8a93a8" stroke-opacity="0.45" stroke-width="1.5"/>
+${path(texto, `fill="#8a93a8"`)}`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${etiqueta}${activa ? " (actual)" : ""}">
+<defs><linearGradient id="canto" x1="0" x2="1"><stop offset="0" stop-color="#8b7bf0"/><stop offset="0.52" stop-color="#48d4d0"/><stop offset="1" stop-color="#e6c06a"/></linearGradient></defs>
+${cuerpo}
+</svg>
+`;
+}
+
 // ── Escribir ────────────────────────────────────────────────────────────────
 
 mkdirSync(SALIDA, { recursive: true });
-const BANNERS = { cabecera, banda, separador, video, pie };
-for (const [nombre, hacer] of Object.entries(BANNERS)) {
-  for (const [tema, t] of Object.entries(TEMAS)) {
-    const fichero = join(SALIDA, `${nombre}-${tema}.svg`);
-    const svg = hacer(t);
-    writeFileSync(fichero, svg);
-    console.log(`${nombre}-${tema}.svg  ${(svg.length / 1024).toFixed(1)} KB`);
+const escribir = (nombre, svg) => {
+  writeFileSync(join(SALIDA, nombre), svg);
+  console.log(`${nombre}  ${(svg.length / 1024).toFixed(1)} KB`);
+};
+
+// Con texto: en los dos idiomas (el español sin sufijo, el inglés con «-en»).
+for (const [nombre, hacer] of Object.entries({ cabecera, banda, video })) {
+  for (const [idioma, x_] of Object.entries(TEXTOS)) {
+    for (const [tema, t] of Object.entries(TEMAS)) {
+      escribir(`${nombre}${idioma === "es" ? "" : "-en"}-${tema}.svg`, hacer(t, x_));
+    }
   }
+}
+// Sin texto que traducir.
+for (const [nombre, hacer] of Object.entries({ separador, pie })) {
+  for (const [tema, t] of Object.entries(TEMAS)) escribir(`${nombre}-${tema}.svg`, hacer(t));
+}
+// El selector de idioma.
+for (const [idioma, etiqueta] of Object.entries(SELECTOR)) {
+  escribir(`idioma-${idioma}-activo.svg`, pildora(etiqueta, true));
+  escribir(`idioma-${idioma}.svg`, pildora(etiqueta, false));
 }
