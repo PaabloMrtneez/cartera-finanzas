@@ -128,8 +128,8 @@ const CASOS: Caso[] = [
     esquema: loanPreviewSchema,
     claves: ["principal_cents", "term_months", "tin", "fee_mode", "fee", "charge_day", "start_on", "first_charge_on", "disbursed"],
   },
-  { nombre: "loanCreateSchema", esquema: loanCreateSchema, claves: ["name", "tae", "terms"] },
-  { nombre: "loanUpdateSchema", esquema: loanUpdateSchema, claves: ["id", "name", "tae"] },
+  { nombre: "loanCreateSchema", esquema: loanCreateSchema, claves: ["name", "tae", "category_id", "counts_full_installment", "terms"] },
+  { nombre: "loanUpdateSchema", esquema: loanUpdateSchema, claves: ["id", "name", "tae", "category_id", "counts_full_installment"] },
   { nombre: "loanSettleSchema", esquema: loanSettleSchema, claves: ["id", "on", "fee_cents"] },
   { nombre: "loanDeleteSchema", esquema: loanDeleteSchema, claves: ["id", "confirm_name"] },
 ];

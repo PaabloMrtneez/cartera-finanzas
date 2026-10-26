@@ -78,6 +78,7 @@ export function CondicionesPrestamo({
   inicial,
   cabecera,
   conTae = false,
+  gasto,
   pie,
 }: {
   cuentas: { id: string; name: string }[];
@@ -86,6 +87,11 @@ export function CondicionesPrestamo({
   cabecera?: ReactNode;
   /** El campo de la TAE del contrato (solo en el alta). */
   conTae?: boolean;
+  /**
+   * La categoría y qué cuenta como gasto (solo en el alta): va justo después de
+   * cómo entra el dinero, que es lo que decide si la cuota debe contar entera.
+   */
+  gasto?: ReactNode;
   /** El error y los botones: en escritorio, bajo la vista previa. */
   pie: ReactNode;
 }) {
@@ -359,6 +365,8 @@ export function CondicionesPrestamo({
             <input type="hidden" name="fee_mode" value={modoComision} />
           </div>
         ) : null}
+
+        {gasto}
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-[6px]">

@@ -25,7 +25,7 @@ export const metadata = { title: "Préstamos" };
 export default async function PrestamosPage() {
   const supabase = await createClient();
 
-  const [{ data: estados }, { data: cuentas }] = await Promise.all([
+  const [{ data: estados }, { data: cuentas }, { data: categorias }] = await Promise.all([
     supabase
       .from("v_loan_status")
       // Los tipos, además, como TEXTO: numeric llega como doble por JSON y se
@@ -35,6 +35,8 @@ export default async function PrestamosPage() {
       )
       .order("start_on", { ascending: false }),
     supabase.from("account").select("id, name, type, archived").order("name"),
+    // La categoría de un préstamo es de gasto (la FK compuesta lo exige).
+    supabase.from("category").select("id, name").eq("type", "EXPENSE").order("name"),
   ]);
 
   const prestamos = estados ?? [];
@@ -46,6 +48,8 @@ export default async function PrestamosPage() {
   );
 
   const nombreCuenta = new Map((cuentas ?? []).map((c) => [c.id, c.name]));
+  const deGasto = categorias ?? [];
+  const nombreCategoria = new Map(deGasto.map((c) => [c.id, c.name]));
   // Desde dónde se puede pagar un préstamo: ni una archivada ni la de otro préstamo.
   const elegibles = (cuentas ?? [])
     .filter((c) => !c.archived && c.type !== "PRESTAMO")
@@ -95,6 +99,9 @@ export default async function PrestamosPage() {
       next_payment_cents: p.next_payment_cents,
       end_on: p.end_on,
       closed_on: p.closed_on,
+      // Sin categoría todavía: «Intereses» se crea con la primera cuota.
+      categoria: (p.interest_category_id && nombreCategoria.get(p.interest_category_id)) || "Intereses",
+      cuota_entera: p.counts_full_installment,
     };
   }
 
@@ -111,6 +118,7 @@ export default async function PrestamosPage() {
       pendienteCents: p.principal_pending_cents,
       cuentaPago: nombreCuenta.get(p.payment_account_id) ?? "tu cuenta",
       liquidarDesde: ultimaCobrada && ultimaCobrada > p.start_on ? ultimaCobrada : p.start_on,
+      gasto: { categoryId: p.interest_category_id, entera: p.counts_full_installment },
       condiciones: {
         payment_account_id: p.payment_account_id,
         principal: formatCentsPlain(p.principal_cents),
@@ -126,7 +134,7 @@ export default async function PrestamosPage() {
   }
 
   const nuevo = (trigger: React.ReactNode) => (
-    <PrestamoDialog cuentas={elegibles} trigger={trigger} />
+    <PrestamoDialog cuentas={elegibles} categorias={deGasto} trigger={trigger} />
   );
 
   const ficha = (p: (typeof prestamos)[number], heroe: boolean) => (
@@ -141,6 +149,7 @@ export default async function PrestamosPage() {
           <PrestamoDialog
             prestamo={gestion(p)}
             cuentas={elegibles}
+            categorias={deGasto}
             trigger={
               <Button variant="ghost" size="icon" aria-label={`Editar ${p.name}`}>
                 <Icon name="pencil" size={18} />
@@ -255,8 +264,10 @@ export default async function PrestamosPage() {
             ) : null}
 
             <p className="px-1 text-[13px] leading-[18px] text-muted">
-              Cada cuota se apunta sola el día de cobro en dos partes: los intereses, como gasto (categoría
-              Intereses), y el capital, como traspaso a la cuenta del préstamo, que es lo que baja la deuda.
+              Cada cuota se apunta sola el día de cobro en dos partes: los intereses, como gasto en la
+              categoría del préstamo, y el capital, como traspaso a la cuenta del préstamo, que es lo que baja
+              la deuda. Si eliges que cuente la cuota entera, el capital cuenta además como gasto en esa
+              categoría; tus saldos no cambian.
             </p>
           </>
         )}

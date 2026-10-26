@@ -75,3 +75,30 @@ export function mensajeErrorDb(error: ErrorDb | string, propias: Array<[RegExp, 
   if (mensaje) console.error("error de la base sin traducir:", mensaje, codigo);
   return ERROR_GENERICO;
 }
+
+/**
+ * Para las LECTURAS de una pantalla: si alguna consulta ha fallado, lanza.
+ *
+ * Una consulta que falla (un timeout, la base que no responde) devuelve
+ * `data: null`, y una pantalla que lo pinta con `?? 0` enseña «Gasto de
+ * octubre: 0,00 €» como si fuera verdad. Con cifras de dinero, una cifra falsa
+ * es peor que ninguna: mejor la pantalla de error de (app), que lo dice y
+ * ofrece reintentar. El detalle va al registro del servidor, no a la pantalla.
+ */
+export function exigirLecturas(
+  resultados: ReadonlyArray<object>,
+  pantalla: string,
+): void {
+  // `object` y no `{ error }`: algunas lecturas ya vienen resueltas sin él
+  // (una cuenta memorizada, `{ count }`), y esas no pueden haber fallado aquí.
+  const fallos = resultados.flatMap((r, i) => {
+    const error = (r as { error?: ErrorDb }).error;
+    return error ? [{ i, error }] : [];
+  });
+  if (fallos.length === 0) return;
+  console.error(
+    `${pantalla}: ${fallos.length} consulta(s) fallaron`,
+    fallos.map((f) => `#${f.i} ${f.error?.code ?? ""} ${f.error?.message ?? ""}`).join(" · "),
+  );
+  throw new Error(`No se han podido leer los datos de ${pantalla}`);
+}

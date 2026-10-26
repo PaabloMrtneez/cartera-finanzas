@@ -68,7 +68,11 @@ export default async function DetalleMovimientoPage({
     // Si es parte de un préstamo, de cuál: el detalle lo dice («Cuota 3 de 60
     // del préstamo Coche») en vez de «Generado por un gasto fijo».
     tx.loan_id
-      ? supabase.from("loan").select("id, name, term_months").eq("id", tx.loan_id).maybeSingle()
+      ? supabase
+          .from("loan")
+          .select("id, name, term_months, interest_category_id, counts_full_installment")
+          .eq("id", tx.loan_id)
+          .maybeSingle()
       : Promise.resolve({ data: null }),
     // Contexto: qué peso tiene este gasto dentro de su categoría, y cómo van
     // los seis meses. Solo en gastos: un traspaso no pesa en ninguna
@@ -82,7 +86,14 @@ export default async function DetalleMovimientoPage({
       : Promise.resolve({ data: null }),
   ]);
 
-  const category = categories?.find((c) => c.id === tx.category_id) ?? null;
+  // El capital de un préstamo que cuenta la cuota entera es un traspaso, pero
+  // cuenta como gasto en la categoría DEL PRÉSTAMO (v_transaction_econ).
+  const cuentaComoGasto =
+    tx.type === "TRANSFER" &&
+    (tx.loan_part === "CAPITAL" || tx.loan_part === "LIQUIDACION") &&
+    prestamo?.counts_full_installment === true;
+  const categoryId = cuentaComoGasto ? (prestamo?.interest_category_id ?? null) : tx.category_id;
+  const category = categories?.find((c) => c.id === categoryId) ?? null;
   const account = accounts?.find((a) => a.id === tx.account_id) ?? null;
   const toAccount = accounts?.find((a) => a.id === tx.to_account_id) ?? null;
 
@@ -141,6 +152,7 @@ export default async function DetalleMovimientoPage({
               : (account?.name ?? "—")}
             {" · "}
             {category?.name ?? "Sin categoría"}
+            {cuentaComoGasto ? " · cuenta como gasto" : null}
           </p>
 
           {refunded > 0 ? (

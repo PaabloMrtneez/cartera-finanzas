@@ -27,6 +27,7 @@ import {
 } from "@/lib/money";
 import { TYPE_COLOR_VAR } from "@/lib/types";
 import { contarPendientes } from "@/lib/supabase/consultas-compartidas";
+import { exigirLecturas } from "@/lib/errores-db";
 import { createClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/cn";
 
@@ -50,21 +51,7 @@ export default async function ResumenPage({
   const esMesActual = month === monthStart(todayIso());
   const supabase = await createClient();
 
-  const [
-    { data: summaries },
-    { data: breakdown },
-    { data: ritmo },
-    { data: comparativa },
-    { data: recent },
-    { data: categories },
-    { data: accounts },
-    { count: pending },
-    { count: sinClasificarTotal },
-    { data: prevision },
-    { data: categoriasPrevision },
-    { data: ingresoPendiente },
-    { data: limites },
-  ] = await Promise.all([
+  const lecturas = await Promise.all([
     supabase
       .from("v_month_summary")
       .select("*")
@@ -111,6 +98,24 @@ export default async function ResumenPage({
     // Los límites del mes, para los anillos.
     supabase.rpc("budget_status", { p_month: month }),
   ]);
+  // Una consulta que falla no se pinta como 0,00 €: va a la pantalla de error,
+  // que lo dice y ofrece reintentar (ver exigirLecturas).
+  exigirLecturas(lecturas, "Resumen");
+  const [
+    { data: summaries },
+    { data: breakdown },
+    { data: ritmo },
+    { data: comparativa },
+    { data: recent },
+    { data: categories },
+    { data: accounts },
+    { count: pending },
+    { count: sinClasificarTotal },
+    { data: prevision },
+    { data: categoriasPrevision },
+    { data: ingresoPendiente },
+    { data: limites },
+  ] = lecturas;
 
   const current = summaries?.find((s) => s.period_month === month);
   const previous = summaries?.find(

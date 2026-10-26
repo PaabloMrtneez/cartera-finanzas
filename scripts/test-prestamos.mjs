@@ -196,8 +196,8 @@ async function auditoria() {
   const priv = async (f, rol) =>
     (await q("select has_function_privilege($2, $1, 'execute') as p", [f, rol]))[0].p;
   const deUsuario = [
-    "public.create_loan(text, uuid, bigint, integer, numeric, numeric, bigint, integer, date, date, boolean)",
-    "public.update_loan(uuid, text, numeric)",
+    "public.create_loan(text, uuid, bigint, integer, numeric, numeric, bigint, integer, date, date, boolean, uuid, boolean)",
+    "public.update_loan(uuid, text, numeric, uuid, boolean)",
     "public.update_loan_terms(uuid, uuid, bigint, integer, numeric, bigint, integer, date, date, boolean)",
     "public.cancel_loan(uuid)",
     "public.settle_loan(uuid, date, bigint)",

@@ -13,6 +13,7 @@ import {
   type CondicionesIniciales,
 } from "@/components/prestamos/condiciones-prestamo";
 import { EliminarPrestamoPaso } from "@/components/prestamos/eliminar-prestamo-paso";
+import { GastoPrestamo, type GastoInicial } from "@/components/prestamos/gasto-prestamo";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { FieldError, Input, Label } from "@/components/ui/input";
@@ -35,6 +36,8 @@ export type PrestamoGestion = {
   cuentaPago: string;
   /** Desde cuándo se puede liquidar: el inicio, o la última cuota cobrada. */
   liquidarDesde: string;
+  /** La categoría y si cuenta la cuota entera: también se cambian siempre. */
+  gasto: GastoInicial;
   condiciones: CondicionesIniciales;
 };
 
@@ -49,7 +52,7 @@ const TITULOS: Record<Paso, (nombre: string) => string> = {
 };
 
 const DESCRIPCIONES: Record<Paso, string> = {
-  editar: "El nombre y la TAE se cambian siempre. Las condiciones, solo antes de la primera cuota.",
+  editar: "El nombre, la TAE y la categoría se cambian siempre. Las condiciones, solo antes de la primera cuota.",
   condiciones: "Se rehacen el cuadro, el ingreso del dinero y la comisión. Aún no hay cuotas cobradas.",
   liquidar: "Lo has pagado entero, o lo amortizas ahora: la deuda queda a cero.",
   cancelar: "Deja de cobrar cuotas sin mover dinero.",
@@ -62,7 +65,7 @@ const DESCRIPCIONES: Record<Paso, string> = {
  * Radix y el formulario no entren en el paquete inicial de la pantalla.
  *
  * La gestión tiene pasos dentro de la misma hoja, como «Eliminar cuenta»: el
- * nombre y la TAE se editan siempre; las condiciones, solo si no hay cuotas
+ * nombre, la TAE y la categoría (con qué cuenta como gasto) se editan siempre; las condiciones, solo si no hay cuotas
  * cobradas (`updateLoanTerms`); «Liquidar» y «Dejar de seguirlo» cierran el
  * préstamo de dos formas distintas y cada una lo explica; y «Eliminar» pide el
  * nombre escrito.
@@ -70,11 +73,14 @@ const DESCRIPCIONES: Record<Paso, string> = {
 export default function PrestamoDialogContent({
   prestamo,
   cuentas,
+  categorias,
   open,
   onOpenChange,
 }: {
   prestamo?: PrestamoGestion;
   cuentas: { id: string; name: string }[];
+  /** Las categorías de gasto, para la del préstamo. */
+  categorias: { id: string; name: string }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -186,6 +192,7 @@ export default function PrestamoDialogContent({
                   />
                 </div>
               }
+              gasto={<GastoPrestamo categorias={categorias} />}
               pie={botonesCondiciones("Guardar préstamo", {
                 texto: "Limpiar todo",
                 accion: () => {
@@ -239,6 +246,7 @@ export default function PrestamoDialogContent({
                   Si la dejas vacía, se enseña la calculada con la comisión: {p.taeCalculada}.
                 </p>
               </div>
+              <GastoPrestamo categorias={categorias} inicial={p.gasto} />
               <FieldError>{error}</FieldError>
               <DialogFooter>
                 <Button type="submit" block disabled={pending}>
@@ -326,6 +334,11 @@ export default function PrestamoDialogContent({
               Se cobran las cuotas que hayan vencido hasta esa fecha y se apunta un traspaso de lo que
               quede (ahora, {formatCents(p.pendienteCents)}) desde {p.cuentaPago} a la cuenta del
               préstamo. Después no se cobra nada más.
+              {p.gasto.entera
+                ? ` Como cuenta la cuota entera, ese pago cuenta también como gasto en «${
+                    categorias.find((c) => c.id === p.gasto.categoryId)?.name ?? "su categoría"
+                  }».`
+                : null}
             </p>
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-[6px]">

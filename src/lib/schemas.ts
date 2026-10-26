@@ -487,19 +487,41 @@ export const loanTermsSchema = loanFinanceBase
 const loanNameSchema = z.string().trim().min(1, "Ponle un nombre").max(40, "Máximo 40 caracteres");
 const taeSchema = tipoOpcionalSchema(TAE_MAXIMA, `Escribe la TAE, por ejemplo 6,9 (de 0 a ${TAE_MAXIMA} %), o déjala vacía`);
 
-/** Alta: nombre, TAE opcional (si falta, la app la calcula) y las condiciones. */
-export const loanCreateSchema = z.object({
-  name: loanNameSchema,
-  tae: taeSchema,
-  terms: loanTermsSchema,
-});
+/**
+ * La categoría del préstamo y qué cuenta como gasto: solo los intereses (lo de
+ * siempre) o la cuota entera, que entonces necesita una categoría (la base lo
+ * exige también). Sin categoría, los intereses van a «Intereses».
+ */
+const loanGastoCampos = {
+  category_id: z.uuid("Elige una categoría de la lista").nullable().default(null),
+  counts_full_installment: z.boolean().default(false),
+};
+const CATEGORIA_DE_LA_CUOTA = {
+  message: "Elige en qué categoría cuenta la cuota",
+  path: ["category_id"],
+};
+const cuotaConCategoria = (v: { category_id: string | null; counts_full_installment: boolean }) =>
+  !v.counts_full_installment || v.category_id !== null;
 
-/** Lo que se puede cambiar siempre: el nombre y la TAE del contrato. */
-export const loanUpdateSchema = z.object({
-  id: z.uuid("Préstamo no válido"),
-  name: loanNameSchema,
-  tae: taeSchema,
-});
+/** Alta: nombre, TAE opcional (si falta, la app la calcula), la categoría y las condiciones. */
+export const loanCreateSchema = z
+  .object({
+    name: loanNameSchema,
+    tae: taeSchema,
+    ...loanGastoCampos,
+    terms: loanTermsSchema,
+  })
+  .refine(cuotaConCategoria, CATEGORIA_DE_LA_CUOTA);
+
+/** Lo que se puede cambiar siempre: el nombre, la TAE del contrato y la categoría. */
+export const loanUpdateSchema = z
+  .object({
+    id: z.uuid("Préstamo no válido"),
+    name: loanNameSchema,
+    tae: taeSchema,
+    ...loanGastoCampos,
+  })
+  .refine(cuotaConCategoria, CATEGORIA_DE_LA_CUOTA);
 
 /** Liquidación anticipada: la fecha (por defecto hoy) y la comisión, si la hay. */
 export const loanSettleSchema = z.object({

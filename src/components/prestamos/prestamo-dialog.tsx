@@ -18,16 +18,24 @@ const Contenido = dynamic(() => import("./prestamo-dialog-content"), { ssr: fals
 export function PrestamoDialog({
   prestamo,
   cuentas,
+  categorias,
   trigger,
 }: {
   prestamo?: import("./prestamo-dialog-content").PrestamoGestion;
   cuentas: { id: string; name: string }[];
+  categorias: { id: string; name: string }[];
   trigger: React.ReactNode;
 }) {
   return (
     <DeferredDialog trigger={trigger}>
       {({ open, onOpenChange }) => (
-        <Contenido prestamo={prestamo} cuentas={cuentas} open={open} onOpenChange={onOpenChange} />
+        <Contenido
+          prestamo={prestamo}
+          cuentas={cuentas}
+          categorias={categorias}
+          open={open}
+          onOpenChange={onOpenChange}
+        />
       )}
     </DeferredDialog>
   );

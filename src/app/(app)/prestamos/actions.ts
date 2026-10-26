@@ -80,6 +80,17 @@ function leerDesembolso(formData: FormData): boolean | undefined {
   return undefined;
 }
 
+/**
+ * La categoría (vacía: «Intereses») y qué cuenta como gasto: «entera» (la
+ * cuota) o «intereses» (solo los intereses, lo de siempre).
+ */
+function leerGasto(formData: FormData) {
+  return {
+    category_id: campo(formData, "category_id") || null,
+    counts_full_installment: campo(formData, "cuenta_gasto") === "entera",
+  };
+}
+
 function leerCondiciones(formData: FormData) {
   return {
     payment_account_id: campo(formData, "payment_account_id"),
@@ -189,10 +200,11 @@ export async function createLoan(formData: FormData): Promise<CreateResult> {
   const parsed = loanCreateSchema.safeParse({
     name: campo(formData, "name"),
     tae: campo(formData, "tae") || null,
+    ...leerGasto(formData),
     terms: leerCondiciones(formData),
   });
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
-  const { name, tae, terms } = parsed.data;
+  const { name, tae, category_id, counts_full_installment, terms } = parsed.data;
   const cuadroMalo = errorDelCuadro(terms);
   if (cuadroMalo) return { ok: false, error: cuadroMalo };
 
@@ -211,6 +223,8 @@ export async function createLoan(formData: FormData): Promise<CreateResult> {
     p_start_on: terms.start_on,
     p_first_charge_on: terms.first_charge_on,
     p_disbursed: terms.disbursed,
+    p_category_id: category_id,
+    p_counts_full_installment: counts_full_installment,
   });
   if (error) return { ok: false, error: amable(error) };
 
@@ -225,12 +239,17 @@ export async function createLoan(formData: FormData): Promise<CreateResult> {
 // Editar
 // ---------------------------------------------------------------------------
 
-/** El nombre (y el de su cuenta) y la TAE del contrato: se pueden cambiar siempre. */
+/**
+ * El nombre (y el de su cuenta), la TAE del contrato, la categoría y qué cuenta
+ * como gasto: se pueden cambiar siempre, porque no tocan el cuadro ni los
+ * saldos. Al cambiar la categoría, los intereses ya apuntados se van con ella.
+ */
 export async function updateLoan(id: string, formData: FormData): Promise<ActionResult> {
   const parsed = loanUpdateSchema.safeParse({
     id,
     name: campo(formData, "name"),
     tae: campo(formData, "tae") || null,
+    ...leerGasto(formData),
   });
   if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
 
@@ -241,6 +260,8 @@ export async function updateLoan(id: string, formData: FormData): Promise<Action
     p_loan_id: parsed.data.id,
     p_name: parsed.data.name,
     p_tae_pct: parsed.data.tae === null ? null : tipoComoDecimal(parsed.data.tae),
+    p_category_id: parsed.data.category_id,
+    p_counts_full_installment: parsed.data.counts_full_installment,
   });
   if (error) return { ok: false, error: amable(error) };
 

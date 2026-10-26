@@ -264,6 +264,8 @@ export type Database = {
           notified_period: number;
           interest_category_id: string | null;
           interest_category_type: EntryType | null;
+          /** true: el capital de cada cuota cuenta como gasto en la categoría del préstamo. */
+          counts_full_installment: boolean;
           status: LoanStatus;
           closed_on: string | null;
         } & Timestamps;
@@ -855,7 +857,9 @@ export type Database = {
           next_payment_cents: number | null;
           end_on: string;
           closed_on: string | null;
+          /** La categoría del préstamo (intereses, comisiones y, si cuenta entera, la cuota). */
           interest_category_id: string | null;
+          counts_full_installment: boolean;
         };
         Relationships: [];
       };
@@ -1563,11 +1567,21 @@ export type Database = {
           p_start_on: string;
           p_first_charge_on: string | null;
           p_disbursed: boolean;
+          /** Sin ella, «Intereses» (se crea sola). Obligatoria con la cuota entera. */
+          p_category_id?: string | null;
+          p_counts_full_installment?: boolean;
         };
         Returns: Json;
       };
       update_loan: {
-        Args: { p_loan_id: string; p_name: string; p_tae_pct: string | null };
+        /** `null` en la categoría o en la opción: no cambiarla. */
+        Args: {
+          p_loan_id: string;
+          p_name: string;
+          p_tae_pct: string | null;
+          p_category_id?: string | null;
+          p_counts_full_installment?: boolean | null;
+        };
         Returns: undefined;
       };
       update_loan_terms: {

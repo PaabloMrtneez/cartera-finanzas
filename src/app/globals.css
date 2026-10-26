@@ -951,6 +951,26 @@ body::before {
   }
 
   /*
+    El bloqueo de scroll de Radix (react-remove-scroll) al abrir un desplegable
+    o una hoja. Hace dos cosas: quita la barra (`overflow: hidden`) y, para
+    compensar su ancho, le pone ese margen a la derecha al body. Con el hueco
+    de arriba siempre reservado, ese margen sobra: el contenido se iba 15 px a
+    la izquierda cada vez que se abría un desplegable. Fuera.
+  */
+  body[data-scroll-locked] {
+    margin-right: 0 !important;
+  }
+
+  /*
+    Y un desplegable suelto (sin hoja ni diálogo debajo) no quita la barra: el
+    scroll de la rueda ya lo frena Radix por su cuenta, y la página no tiene
+    por qué cambiar de aspecto por abrir una lista.
+  */
+  body[data-scroll-locked]:has([data-radix-select-viewport]):not(:has([role="dialog"], [role="alertdialog"])) {
+    overflow: visible !important;
+  }
+
+  /*
     Sin rebote elástico en la página. En iOS, un scroll brusco que llega al
     principio o al final sigue de largo y la página «rebota» (rubber-banding):
     durante ese medio segundo el documento se desplaza más allá de sus bordes

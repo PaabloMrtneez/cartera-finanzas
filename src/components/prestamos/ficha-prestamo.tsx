@@ -49,6 +49,10 @@ export type DatosPrestamo = {
   next_payment_cents: number | null;
   end_on: string;
   closed_on: string | null;
+  /** El nombre de la categoría del préstamo. */
+  categoria: string;
+  /** true: la cuota entera cuenta como gasto; false: solo los intereses. */
+  cuota_entera: boolean;
 };
 
 /**
@@ -138,6 +142,11 @@ export function FichaPrestamo({
           <Dato
             rotulo={p.tae_es_contrato ? "TAE" : "TAE calculada"}
             valor={formatTipo(p.tae_efectiva_texto)}
+          />
+          <Dato
+            rotulo="Cuenta como gasto"
+            valor={p.categoria}
+            detalle={p.cuota_entera ? "la cuota entera" : "los intereses"}
           />
         </dl>
 

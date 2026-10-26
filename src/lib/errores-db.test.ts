@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ERROR_GENERICO, NO_ENCONTRADO, mensajeErrorDb } from "./errores-db";
+import { ERROR_GENERICO, NO_ENCONTRADO, exigirLecturas, mensajeErrorDb } from "./errores-db";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -51,5 +51,20 @@ describe("mensajeErrorDb", () => {
     expect(mensajeErrorDb({ message: "something odd happened in relation goal_x" })).toBe(ERROR_GENERICO);
     expect(mensajeErrorDb({ message: "no rows returned" })).toBe(ERROR_GENERICO);
     expect(consola).toHaveBeenCalled();
+  });
+});
+
+describe("exigirLecturas", () => {
+  it("sin errores no hace nada (tampoco con lecturas que no traen `error`)", () => {
+    expect(() => exigirLecturas([{ data: [], error: null }, { count: 5 }], "Resumen")).not.toThrow();
+  });
+
+  it("un timeout en cualquier lectura lanza, en vez de dejar que se pinte un 0", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const timeout = { code: "57014", message: "canceling statement due to statement timeout" };
+    expect(() => exigirLecturas([{ data: [], error: null }, { data: null, error: timeout }], "Resumen")).toThrow(
+      "No se han podido leer los datos de Resumen",
+    );
+    expect(console.error).toHaveBeenCalled();
   });
 });

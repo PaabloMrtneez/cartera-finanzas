@@ -332,6 +332,19 @@ describe("esquemas de préstamo", () => {
     expect(loanCreateSchema.safeParse({ name: "x".repeat(41), tae: null, terms: terminos }).success).toBe(false);
   });
 
+  it("alta: sin categoría, solo los intereses; la cuota entera exige categoría", () => {
+    const cat = "33333333-3333-4333-8333-333333333333";
+    const porDefecto = loanCreateSchema.safeParse({ name: "Coche", tae: null, terms: terminos });
+    expect(porDefecto.success && porDefecto.data.category_id).toBeNull();
+    expect(porDefecto.success && porDefecto.data.counts_full_installment).toBe(false);
+    const entera = loanCreateSchema.safeParse({ name: "Coche", tae: null, terms: terminos, category_id: cat, counts_full_installment: true });
+    expect(entera.success && entera.data.counts_full_installment).toBe(true);
+    const sinCat = loanCreateSchema.safeParse({ name: "Coche", tae: null, terms: terminos, counts_full_installment: true });
+    expect(sinCat.success).toBe(false);
+    if (!sinCat.success) expect(sinCat.error.issues[0].message).toBe("Elige en qué categoría cuenta la cuota");
+    expect(loanCreateSchema.safeParse({ name: "Coche", tae: null, terms: terminos, category_id: "x" }).success).toBe(false);
+  });
+
   it("liquidar: comisión vacía es 0, en euros si se da", () => {
     const id = "22222222-2222-4222-8222-222222222222";
     expect(loanSettleSchema.parse({ id, fee_cents: "" }).fee_cents).toBe(0);
