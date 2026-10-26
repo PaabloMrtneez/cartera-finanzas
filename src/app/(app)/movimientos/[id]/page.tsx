@@ -114,8 +114,17 @@ export default async function DetalleMovimientoPage({
 
         La rejilla coloca por filas, así que las columnas se dicen a mano: el
         orden del DOM sigue siendo el de móvil.
+
+        Y las FILAS también. El formulario mide unos 960 px: si ocupara solo la
+        fila 1, esa fila mediría eso entero y la columna izquierda pondría el
+        importe arriba y todo lo demás (origen, contexto) DEBAJO del formulario,
+        con un hueco del alto de la pantalla en medio. Por eso el formulario
+        abarca todas las filas, y la última es elástica (1fr): ahí va a parar lo
+        que le sobra de alto, y la columna izquierda queda apretada arriba.
+        Cuatro filas de contenido a la izquierda —importe, origen, contexto y
+        volver— más la elástica.
       */}
-      <PageBody className="lg:grid lg:max-w-[1240px] lg:grid-cols-[minmax(0,1fr)_440px] lg:items-start">
+      <PageBody className="lg:grid lg:max-w-[1240px] lg:grid-cols-[minmax(0,1fr)_440px] lg:grid-rows-[auto_auto_auto_auto_1fr] lg:items-start">
         {/* El importe manda, sin caja alrededor: es el titular de la pantalla. */}
         <div className="flex animate-rise flex-col gap-1 lg:col-start-1 lg:row-start-1">
           <p className="cifra-hero" style={{ color: TYPE_COLOR_VAR[tx.type] }}>
@@ -205,7 +214,7 @@ export default async function DetalleMovimientoPage({
           fuera de alcance, sin forma de llegar a él. Que se desplace con la
           página.
         */}
-        <Card className="p-4 lg:col-start-2 lg:row-start-1 lg:p-6">
+        <Card className="p-4 lg:col-start-2 lg:row-span-5 lg:row-start-1 lg:p-6">
           <div className="mb-4 flex items-center gap-2">
             <Icon name="pencil" size={16} />
             <h2 className="text-[16px] leading-[22px] font-semibold">Editar</h2>

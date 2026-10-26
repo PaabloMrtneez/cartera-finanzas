@@ -941,6 +941,13 @@ body::before {
        el elemento quede DEBAJO de ella, no tapado. 56 px de barra más el área
        segura del iPhone. */
     scroll-padding-top: calc(56px + env(safe-area-inset-top));
+    /* El hueco de la barra de desplazamiento, siempre reservado. Donde la barra
+       ocupa sitio (Windows, Linux), aparecer o desaparecer robaba 15 px de
+       ancho y todo se recolocaba: en «Nuevo movimiento», Gasto (alto, con
+       barra) salía más estrecho que Ingreso o Traspaso (cortos, sin ella). Con
+       el hueco fijo, el ancho no depende de lo largo que sea la página. En
+       móvil y macOS la barra flota sobre el contenido y esto no cambia nada. */
+    scrollbar-gutter: stable;
   }
 
   /*

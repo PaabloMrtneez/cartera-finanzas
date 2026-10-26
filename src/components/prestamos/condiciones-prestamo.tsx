@@ -64,9 +64,14 @@ function Ayuda({ id, children }: { id?: string; children: ReactNode }) {
  *
  * Sirve al alta y a «Cambiar las condiciones». El formulario lo pone quien lo
  * usa; aquí van los campos (con sus `name`, que son los de la server action) y
- * la vista previa. En escritorio la vista previa va a la derecha, al lado de
- * lo que la mueve; en móvil, debajo de los campos y justo encima del botón,
- * que es cuando importa. El orden del DOM es el de móvil.
+ * la vista previa. En móvil, la vista previa va debajo de los campos y justo
+ * encima de los botones, que es cuando importa. El orden del DOM es el de móvil.
+ *
+ * En escritorio son dos columnas de ALTO FIJO: a la izquierda los campos, que
+ * se desplazan solos; a la derecha la vista previa y, debajo, los botones, que
+ * no se mueven. La vista previa ocupa todo el alto que queda, así que mide lo
+ * mismo con o sin datos: antes encogía a una línea mientras faltaba algo y los
+ * botones quedaban al final de todo, en la esquina de abajo a la derecha.
  */
 export function CondicionesPrestamo({
   cuentas,
@@ -81,7 +86,7 @@ export function CondicionesPrestamo({
   cabecera?: ReactNode;
   /** El campo de la TAE del contrato (solo en el alta). */
   conTae?: boolean;
-  /** El error y los botones, bajo los campos. */
+  /** El error y los botones: en escritorio, bajo la vista previa. */
   pie: ReactNode;
 }) {
   const hoy = useMemo(() => hoyEnMadrid(), []);
@@ -150,8 +155,26 @@ export function CondicionesPrestamo({
   const taeCalculada = vista.estado === "ok" && vista.resumen.tae !== null ? vista.resumen.tae : null;
 
   return (
-    <div className="flex flex-col gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start lg:gap-x-8 lg:gap-y-5">
-      <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1">
+    <div
+      className={cn(
+        "flex flex-col gap-5",
+        // El alto: el de la ventana menos la cabecera de la hoja y su margen,
+        // con un tope para que en pantallas altas no quede un cajón vacío.
+        "lg:grid lg:h-[min(40rem,calc(100dvh-15rem))] lg:grid-cols-[minmax(0,1fr)_300px]",
+        "lg:grid-rows-[minmax(0,1fr)] lg:gap-x-8",
+      )}
+    >
+      {/*
+        La columna que se desplaza. Con `overflow` recorta lo que se sale, y el
+        anillo de foco de un campo pegado al borde salía cortado: 4 px de aire
+        por cada lado (compensados con margen negativo) lo dejan entero.
+      */}
+      <div
+        className={cn(
+          "flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1",
+          "lg:-m-1 lg:min-h-0 lg:overflow-y-auto lg:overscroll-contain lg:p-1 lg:pr-3",
+        )}
+      >
         {cabecera}
 
         <div className="flex flex-col gap-[6px]">
@@ -408,9 +431,10 @@ export function CondicionesPrestamo({
         </div>
       </div>
 
-      <VistaPrevia vista={vista} nombreCuenta={nombreCuenta} desembolso={desembolso} />
-
-      <div className="flex flex-col gap-4 lg:col-span-2 lg:row-start-2">{pie}</div>
+      <div className="flex flex-col gap-4 lg:col-start-2 lg:row-start-1 lg:min-h-0">
+        <VistaPrevia vista={vista} nombreCuenta={nombreCuenta} desembolso={desembolso} />
+        {pie}
+      </div>
     </div>
   );
 }
@@ -432,7 +456,7 @@ function VistaPrevia({
   return (
     <section
       aria-label="Vista previa del préstamo"
-      className="flex flex-col gap-3 rounded-md bg-surface-2 p-4 lg:col-start-2 lg:row-start-1 lg:sticky lg:top-0 lg:self-start"
+      className="flex flex-col gap-3 rounded-md bg-surface-2 p-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto"
     >
       <Eyebrow>Vista previa</Eyebrow>
       {vista.estado === "incompleto" ? (
@@ -451,11 +475,6 @@ function VistaPrevia({
             <span className="cifra text-[34px] leading-[40px] font-medium" data-testid="cuota-prevista">
               {formatCents(vista.resumen.cuota)}
             </span>
-            {vista.resumen.ultimaCuota !== vista.resumen.cuota ? (
-              <span className="text-[13px] leading-[18px] text-muted tabular-nums">
-                La última, de {formatCents(vista.resumen.ultimaCuota)}, ajusta el redondeo.
-              </span>
-            ) : null}
             {/* Para el lector de pantalla: la cuota, cada vez que cambia. */}
             <span className="sr-only" aria-live="polite">
               Cuota al mes: {formatCents(vista.resumen.cuota)}
@@ -488,19 +507,22 @@ function VistaPrevia({
             ))}
           </dl>
 
-          <p className="text-[13px] leading-[18px] text-muted tabular-nums">
-            {vista.arranque
-              ? `Se apunta una deuda de ${formatCents(vista.arranque.pendiente)} a hoy, y la app cobra desde la cuota ${vista.arranque.primerPeriodo} de ${vista.plazoMeses}.`
-              : desembolso
-                ? `Entran ${formatCents(vista.principalCents)}${nombreCuenta ? ` en ${nombreCuenta}` : ""}${
+          {/* Qué se apunta al guardar. Hasta que se elige si el dinero entra ahora
+              o ya estaba, nada: esa pregunta ya está en los campos, y repetirla
+              aquí solo era ruido. */}
+          {vista.arranque || desembolso ? (
+            <p className="text-[13px] leading-[18px] text-muted tabular-nums">
+              {vista.arranque
+                ? `Se apunta una deuda de ${formatCents(vista.arranque.pendiente)} a hoy, y la app cobra desde la cuota ${vista.arranque.primerPeriodo} de ${vista.plazoMeses}.`
+                : `Entran ${formatCents(vista.principalCents)}${nombreCuenta ? ` en ${nombreCuenta}` : ""}${
                     vista.comisionCents > 0 ? ` y se apunta la comisión como gasto` : ""
                   }.${
                     vista.vencidas > 0
                       ? ` Al guardar se cobran ya ${vista.vencidas === 1 ? "la cuota vencida" : `las ${vista.vencidas} cuotas vencidas`}.`
                       : ""
-                  }`
-                : "Elige si el dinero entra ahora o ya lo tenías apuntado."}
-          </p>
+                  }`}
+            </p>
+          ) : null}
         </>
       )}
     </section>

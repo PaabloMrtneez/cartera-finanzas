@@ -430,44 +430,50 @@ export function DialogContent({
         </div>
 
         {/*
-          La pregunta, entre la cabecera y el cuerpo: es la propia hoja la que
-          habla, no un diálogo encima de otro. Aparece con un fundido corto.
+          La pregunta, FLOTANDO encima de la hoja: un velo sobre su contenido y
+          una tarjeta de cristal centrada. Antes iba entre la cabecera y el
+          cuerpo, como un bloque más, y empujaba todo hacia abajo; en una hoja
+          de alto fijo (la del préstamo) dejaba los botones cortados. Así no se
+          mueve nada de lo de debajo. El panel es `fixed`, así que esta capa
+          `absolute` lo cubre entero. Tocar el velo es «seguir editando»: lo
+          que no rompe nada. `z-20`: por encima de lo que lleva `z-10` dentro de
+          la hoja (las etiquetas del control segmentado se veían sobre la tarjeta).
         */}
         {preguntando ? (
           <div
-            role="alertdialog"
-            aria-labelledby={tituloDescarte}
-            className={cn(
-              "mx-4 mb-2 flex flex-col gap-3 rounded-md bg-surface-2 p-3 animate-fade-in",
-              "lg:mx-[22px] lg:mt-4 lg:mb-0 lg:flex-row lg:items-center",
-            )}
+            className="absolute inset-0 z-20 flex items-center justify-center bg-scrim p-4 animate-fade-in"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setPreguntando(false);
+            }}
           >
-            <p className="flex min-w-0 flex-1 flex-col">
-              <span id={tituloDescarte} className="text-[15px] leading-5 font-semibold">
-                ¿Descartar los cambios?
-              </span>
-              <span className="text-[13px] leading-[18px] text-muted">
-                Lo que has escrito en esta hoja no se ha guardado.
-              </span>
-            </p>
-            <div className="flex gap-2">
-              <Button
-                ref={seguirEditando}
-                variant="secondary"
-                size="compact"
-                className="flex-1 bg-surface lg:flex-none"
-                onClick={() => setPreguntando(false)}
-              >
-                Seguir editando
-              </Button>
-              <Button
-                variant="destructive"
-                size="compact"
-                className="flex-1 lg:flex-none"
-                onClick={descartar}
-              >
-                Descartar
-              </Button>
+            <div
+              role="alertdialog"
+              aria-modal="true"
+              aria-labelledby={tituloDescarte}
+              className="glass-card flex w-full max-w-sm flex-col gap-4 rounded-lg p-5"
+            >
+              <p className="flex flex-col gap-1">
+                <span id={tituloDescarte} className="text-[17px] leading-[22px] font-semibold">
+                  ¿Descartar los cambios?
+                </span>
+                <span className="text-[14px] leading-5 text-muted">
+                  Lo que has escrito en esta hoja no se ha guardado.
+                </span>
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  ref={seguirEditando}
+                  variant="secondary"
+                  size="compact"
+                  className="flex-1"
+                  onClick={() => setPreguntando(false)}
+                >
+                  Seguir editando
+                </Button>
+                <Button variant="destructive" size="compact" className="flex-1" onClick={descartar}>
+                  Descartar
+                </Button>
+              </div>
             </div>
           </div>
         ) : null}

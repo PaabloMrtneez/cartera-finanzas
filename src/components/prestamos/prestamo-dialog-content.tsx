@@ -80,6 +80,8 @@ export default function PrestamoDialogContent({
 }) {
   const [paso, setPaso] = useState<Paso>("editar");
   const [error, setError] = useState<string | null>(null);
+  /** Cuántas veces se ha pulsado «Limpiar todo»: es la `key` del formulario del alta. */
+  const [vuelta, setVuelta] = useState(0);
   const [pending, startTransition] = useTransition();
   const ids = { nombre: useId(), tae: useId(), fecha: useId(), comision: useId() };
   const hoy = hoyEnMadrid();
@@ -117,20 +119,40 @@ export default function PrestamoDialogContent({
       ejecutar(() => accion(fd));
     };
 
-  const botonesCondiciones = (texto: string, volver?: () => void) => (
-    <>
+  /**
+   * El error y los botones de las condiciones. En escritorio van bajo la vista
+   * previa, en su columna de 300 px: el secundario mide lo que su texto y el de
+   * guardar se queda el resto. A medias, «Guardar préstamo» no cabía y se partía
+   * en dos líneas.
+   * A la izquierda, el secundario: «Volver» al cambiar las condiciones, o
+   * «Limpiar todo» en el alta.
+   */
+  const botonesCondiciones = (
+    texto: string,
+    secundario: { texto: string; accion: () => void },
+  ) => (
+    <div className="flex flex-col gap-3">
       <FieldError>{error}</FieldError>
-      <DialogFooter>
-        {volver ? (
-          <Button variant="secondary" block onClick={volver} disabled={pending}>
-            Volver
-          </Button>
-        ) : null}
-        <Button type="submit" block disabled={pending || cuentas.length === 0}>
+      <div className="flex gap-3 lg:gap-2">
+        <Button
+          variant="secondary"
+          block
+          className="whitespace-nowrap"
+          onClick={secundario.accion}
+          disabled={pending}
+        >
+          {secundario.texto}
+        </Button>
+        <Button
+          type="submit"
+          block
+          className="whitespace-nowrap lg:flex-1"
+          disabled={pending || cuentas.length === 0}
+        >
           {pending ? "Guardando…" : texto}
         </Button>
-      </DialogFooter>
-    </>
+      </div>
+    </div>
   );
 
   // ── Alta ────────────────────────────────────────────────────────────────
@@ -142,7 +164,12 @@ export default function PrestamoDialogContent({
           title="Nuevo préstamo"
           description="La cuota, los intereses y la TAE se calculan al escribir. Las cuotas se cobran solas cada mes."
         >
-          <form onSubmit={alSubmit(createLoan)}>
+          {/*
+            «Limpiar todo» cambia la `key`: React monta el formulario de nuevo,
+            con cada campo y la vista previa en su estado inicial, sin tener
+            que deshacer uno a uno.
+          */}
+          <form key={vuelta} onSubmit={alSubmit(createLoan)}>
             <CondicionesPrestamo
               cuentas={cuentas}
               conTae
@@ -159,7 +186,13 @@ export default function PrestamoDialogContent({
                   />
                 </div>
               }
-              pie={botonesCondiciones("Guardar préstamo")}
+              pie={botonesCondiciones("Guardar préstamo", {
+                texto: "Limpiar todo",
+                accion: () => {
+                  setError(null);
+                  setVuelta((v) => v + 1);
+                },
+              })}
             />
           </form>
         </DialogContent>
@@ -279,7 +312,10 @@ export default function PrestamoDialogContent({
             <CondicionesPrestamo
               cuentas={cuentas}
               inicial={p.condiciones}
-              pie={botonesCondiciones("Guardar condiciones", () => ir("editar"))}
+              pie={botonesCondiciones("Guardar condiciones", {
+                texto: "Volver",
+                accion: () => ir("editar"),
+              })}
             />
           </form>
         ) : null}

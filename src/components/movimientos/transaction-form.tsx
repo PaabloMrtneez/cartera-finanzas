@@ -453,7 +453,7 @@ function FormularioMovimiento({
       onSubmit={onSubmit}
       onInput={alCambiar}
       onChange={alCambiar}
-      className="flex flex-col gap-5"
+      className="@container flex flex-col gap-5"
     >
       {borrador ? (
         <div className="flex items-center gap-3 rounded-md bg-surface-2 py-2 pr-2 pl-3">
@@ -546,7 +546,15 @@ function FormularioMovimiento({
         ) : null}
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+      {/*
+        Dos columnas según el ancho del FORMULARIO, no el de la ventana. El
+        mismo formulario vive en «Nuevo movimiento» (unos 700 px) y en la
+        columna de edición del detalle (440 px), los dos en escritorio: con
+        `lg:` el del detalle también se partía en dos y a la fecha y la hora
+        les tocaban 90 px, con «25/10/» y «02:4» cortados. A partir de 38rem
+        caben dos columnas con la fecha y la hora enteras; por debajo, una.
+      */}
+      <div className="grid gap-4 @[38rem]:grid-cols-2">
         <div className="flex flex-col gap-[6px]">
           <Label htmlFor="description">Descripción</Label>
           <Input
