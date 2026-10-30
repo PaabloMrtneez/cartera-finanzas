@@ -3,8 +3,8 @@
 import { KeyRound, ScanFace, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { ContenidoFila, FILA_AJUSTE, SeccionAjustes } from "@/components/ajustes/seccion";
 import { Button, ButtonLink } from "@/components/ui/button";
-import { Grupo } from "@/components/ui/card";
 import { FieldError } from "@/components/ui/input";
 import { biometriaDe, mensajeFalloLlave, type FactorResumen } from "@/lib/segundo-factor";
 
@@ -79,68 +79,49 @@ export function SeguridadSettings({ factores }: { factores: FactorResumen[] }) {
 
   if (!activada) {
     return (
-      <Grupo titulo="Seguridad">
-        <div className="flex min-h-[60px] items-center gap-3 px-[18px] py-2">
-          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
-            <ShieldCheck size={16} aria-hidden />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[15px] font-semibold">Verificación en dos pasos</span>
-            <span className="text-[13px] leading-[18px] text-muted">Desactivada</span>
-          </span>
+      <SeccionAjustes
+        titulo="Seguridad"
+        descripcion="Ahora entras solo con la contraseña. Con la verificación activada, además te pedirá un código que genera tu móvil: aunque alguien averigüe tu contraseña, no podrá ver tus cuentas."
+      >
+        <div className={FILA_AJUSTE}>
+          <ContenidoFila
+            icono={<ShieldCheck size={17} aria-hidden />}
+            titulo="Verificación en dos pasos"
+            detalle="Desactivada"
+          />
           <ButtonLink href="/2fa/alta?desde=ajustes" variant="secondary" size="compact">
             Activar
           </ButtonLink>
         </div>
-        <p className="hair-t border-separator px-[18px] py-3 text-[13px] leading-[18px] text-muted">
-          Ahora entras solo con la contraseña. Con la verificación activada, además te pedirá un
-          código que genera tu móvil: aunque alguien averigüe tu contraseña, no podrá ver tus
-          cuentas.
-        </p>
-      </Grupo>
+      </SeccionAjustes>
     );
   }
 
   return (
-    <Grupo titulo="Seguridad">
+    <SeccionAjustes
+      titulo="Seguridad"
+      descripcion="Verificación en dos pasos activada: para entrar hace falta la contraseña y, además, el segundo paso."
+    >
       {codigos.map((f) => (
-        <div
-          key={f.id}
-          className="flex min-h-[60px] items-center gap-3 hair-t border-separator px-[18px] py-2 first:border-t-0"
-        >
-          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
-            <KeyRound size={16} aria-hidden />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[15px] font-semibold">Código de 6 dígitos</span>
-            <span className="text-[13px] leading-[18px] text-muted">
-              App de códigos{fecha(f.created_at) ? ` · desde el ${fecha(f.created_at)}` : ""}
-            </span>
-          </span>
+        <div key={f.id} className={FILA_AJUSTE}>
+          <ContenidoFila
+            icono={<KeyRound size={17} aria-hidden />}
+            titulo="Código de 6 dígitos"
+            detalle={`App de códigos${fecha(f.created_at) ? ` · desde el ${fecha(f.created_at)}` : ""}`}
+          />
         </div>
       ))}
 
       {conLlave.map((f) => (
-        <div
-          key={f.id}
-          className="flex min-h-[60px] items-center gap-3 hair-t border-separator px-[18px] py-2 first:border-t-0"
-        >
-          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-accent-soft text-accent-text">
-            <ScanFace size={16} aria-hidden />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[15px] font-semibold">Face ID / huella</span>
-            <span className="truncate text-[13px] leading-[18px] text-muted">
-              {f.friendly_name ?? "Llave de acceso"}
-            </span>
-          </span>
+        <div key={f.id} className={FILA_AJUSTE}>
+          <ContenidoFila
+            icono={<ScanFace size={17} aria-hidden />}
+            claseIcono="bg-accent-soft text-accent-text"
+            titulo="Face ID / huella"
+            detalle={f.friendly_name ?? "Llave de acceso"}
+          />
         </div>
       ))}
-
-      <p className="hair-t border-separator px-[18px] py-3 text-[13px] leading-[18px] text-muted">
-        Verificación en dos pasos activada: para entrar hace falta la contraseña y, además, el
-        segundo paso.
-      </p>
 
       {/* Solo si el dispositivo tiene lector y Supabase lo tiene activado. */}
       {llaves || error || aviso ? (
@@ -169,6 +150,6 @@ export function SeguridadSettings({ factores }: { factores: FactorResumen[] }) {
           ) : null}
         </div>
       ) : null}
-    </Grupo>
+    </SeccionAjustes>
   );
 }

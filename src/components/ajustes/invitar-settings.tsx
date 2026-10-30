@@ -3,8 +3,8 @@
 import { Check, Clipboard, Share } from "lucide-react";
 import { useState, useTransition } from "react";
 import { generarInvitacion, type ResultadoInvitacion } from "@/app/(app)/ajustes/invitar-actions";
+import { SeccionAjustes } from "@/components/ajustes/seccion";
 import { Button } from "@/components/ui/button";
-import { Grupo } from "@/components/ui/card";
 import { FieldError, Input, Label } from "@/components/ui/input";
 import { mensajeInvitacion, textoCaducidad } from "@/lib/invitacion";
 import { llamarAccion } from "@/lib/llamar-accion";
@@ -68,32 +68,33 @@ export function InvitarSettings() {
   }
 
   return (
-    <Grupo titulo="Invitar a alguien">
+    <SeccionAjustes
+      titulo="Invitar a alguien"
+      descripcion="Crea un enlace para que alguien entre en Cartera y compártelo tú, por WhatsApp o como quieras. No se manda ningún correo."
+    >
       {!enlace ? (
         <form onSubmit={generar} className="flex flex-col gap-3 px-[18px] py-4">
-          <p className="text-[13px] leading-[18px] text-muted">
-            Crea un enlace para que alguien entre en Cartera y compártelo tú, por WhatsApp o como
-            quieras. No se manda ningún correo.
-          </p>
-          <div className="flex flex-col gap-[6px]">
-            <Label htmlFor="invitar-email">Su correo</Label>
-            <Input
-              id="invitar-email"
-              type="email"
-              inputMode="email"
-              autoCapitalize="none"
-              autoComplete="off"
-              spellCheck={false}
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="nombre@correo.com"
-            />
+          <div className="flex flex-col gap-3 @md:flex-row @md:items-end">
+            <div className="flex min-w-0 flex-col gap-[6px] @md:flex-1">
+              <Label htmlFor="invitar-email">Su correo</Label>
+              <Input
+                id="invitar-email"
+                type="email"
+                inputMode="email"
+                autoCapitalize="none"
+                autoComplete="off"
+                spellCheck={false}
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="nombre@correo.com"
+              />
+            </div>
+            <Button type="submit" disabled={pending || email.trim() === ""}>
+              {pending ? "Creando…" : "Crear enlace"}
+            </Button>
           </div>
           <FieldError>{error}</FieldError>
-          <Button type="submit" disabled={pending || email.trim() === ""}>
-            {pending ? "Creando…" : "Crear enlace"}
-          </Button>
         </form>
       ) : (
         <div className="flex flex-col gap-3 px-[18px] py-4">
@@ -141,6 +142,6 @@ export function InvitarSettings() {
           </Button>
         </div>
       )}
-    </Grupo>
+    </SeccionAjustes>
   );
 }

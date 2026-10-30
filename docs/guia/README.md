@@ -285,7 +285,7 @@ Both use the same token. If both are active, the same payment is not recorded tw
 
 ### Before you start: the token
 
-1. In Cartera, go to **Settings → The iPhone Shortcut → Connect a device** (*Conectar un dispositivo*) and give it a name (*Pablo's iPhone*).
+1. In Cartera, go to **Settings → The iPhone Shortcut → Devices → Connect** (*Dispositivos → Conectar*) and give it a name (*Pablo's iPhone*).
 2. Copy the **token** that appears, which starts with `cart_`. **It is shown only once**: if you close it without copying, revoke that device and create another.
 3. In **Accounts**, check that your card has its **last 4 digits** set, so the payment goes to the right account.
 

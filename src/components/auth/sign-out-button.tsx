@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
-export function SignOutButton() {
+export function SignOutButton({ className }: { className?: string }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
@@ -12,6 +12,7 @@ export function SignOutButton() {
     <Button
       variant="secondary"
       size="compact"
+      className={className}
       disabled={busy}
       onClick={async () => {
         setBusy(true);

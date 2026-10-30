@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useTransition } from "react";
+import { ContenidoFila, FILA_AJUSTE, SeccionAjustes } from "@/components/ajustes/seccion";
 import { Button } from "@/components/ui/button";
-import { Grupo } from "@/components/ui/card";
 import { Icon } from "@/components/ui/icon";
 import { FieldError } from "@/components/ui/input";
 
@@ -141,13 +141,11 @@ export function PushSettings({
   }
 
   return (
-    <Grupo titulo="Avisos en el móvil">
-      <p className="px-[18px] pt-4 pb-3 text-[13px] leading-[18px] text-muted">
-        Tres cosas y nada más: un gasto del Atajo pendiente de confirmar, un límite que se acerca
-        al tope, y el resumen del mes al cerrarlo. Nunca entre las 23:00 y las 08:00.
-      </p>
-
-      <div className="flex min-h-[60px] items-center gap-3 hair-t border-separator px-[18px] py-3">
+    <SeccionAjustes
+      titulo="Avisos en el móvil"
+      descripcion="Tres cosas y nada más: un gasto del Atajo pendiente de confirmar, un límite que se acerca al tope, y el resumen del mes al cerrarlo. Nunca entre las 23:00 y las 08:00."
+    >
+      <div className={FILA_AJUSTE}>
         <Cuerpo estado={estado} />
 
         {estado === "apagado" ? (
@@ -183,7 +181,7 @@ export function PushSettings({
           Tienes {suscripciones.length} dispositivos recibiendo avisos.
         </p>
       ) : null}
-    </Grupo>
+    </SeccionAjustes>
   );
 }
 
@@ -232,16 +230,11 @@ function Cuerpo({ estado }: { estado: Estado }) {
   const info = mapa[estado];
 
   return (
-    <>
-      <span
-        className={`flex size-[38px] shrink-0 items-center justify-center rounded-full bg-surface-2 ${info.tono}`}
-      >
-        <Icon name={info.icono} size={19} />
-      </span>
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="text-[15px] font-semibold">{info.titulo}</span>
-        <span className="text-[13px] leading-[18px] text-muted">{info.detalle}</span>
-      </span>
-    </>
+    <ContenidoFila
+      icono={<Icon name={info.icono} size={18} />}
+      claseIcono={`bg-surface-2 ${info.tono}`}
+      titulo={info.titulo}
+      detalle={info.detalle}
+    />
   );
 }

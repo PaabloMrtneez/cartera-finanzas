@@ -52,9 +52,9 @@ export function TarjetasCartera({
   const nombreCuenta = new Map(cuentas.map((c) => [c.id, c.name]));
 
   return (
-    <div className="flex flex-col gap-3 hair-t border-separator px-[18px] py-3">
+    <div className="flex flex-col gap-3 hair-t border-separator px-[18px] py-4">
       <div className="flex flex-col gap-1">
-        <span className="text-[15px] leading-5 font-semibold">Tarjetas de Cartera</span>
+        <h3 className="text-[15px] leading-5 font-semibold">Tarjetas de Cartera</h3>
         <p className="text-[13px] leading-[18px] text-muted">
           El aviso de Cartera dice la tarjeta por su nombre. Si se llama igual que una de tus cuentas, va
           sola; si no, asígnala aquí. Pagar con una tarjeta a otra de esta lista (recargar Revolut con
@@ -89,7 +89,7 @@ export function TarjetasCartera({
 
       <form
         key={vuelta}
-        className="flex flex-col gap-3 lg:flex-row lg:items-end"
+        className="flex flex-col gap-3 @xl:flex-row @xl:items-end"
         onSubmit={(e) => {
           e.preventDefault();
           ejecutar(

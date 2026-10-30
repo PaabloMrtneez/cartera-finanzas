@@ -275,7 +275,7 @@ Las dos usan el mismo token. Si conviven, el mismo pago no se apunta dos veces: 
 
 ### Antes de empezar: el token
 
-1. En Cartera, ve a **Ajustes → El Atajo del iPhone → Conectar un dispositivo** y ponle un nombre (*iPhone de Pablo*).
+1. En Cartera, ve a **Ajustes → El Atajo del iPhone → Dispositivos → Conectar** y ponle un nombre (*iPhone de Pablo*).
 2. Copia el **token** que aparece, que empieza por `cart_`. **Solo se enseña una vez**: si cierras sin copiarlo, revoca ese dispositivo y crea otro.
 3. En **Cuentas**, comprueba que tu tarjeta tiene puestos sus **4 últimos dígitos**. Así el pago va a la cuenta correcta.
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "@/components/use-theme";
-import { Grupo } from "@/components/ui/card";
+import { SeccionAjustes } from "@/components/ajustes/seccion";
 import { Segmented } from "@/components/ui/segmented";
 import { THEMES, THEME_LABELS } from "@/lib/theme";
 
@@ -14,16 +14,19 @@ export function ThemeSettings() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <Grupo titulo="Apariencia" claseTarjeta="flex flex-col gap-2 p-4 lg:p-5">
+    <SeccionAjustes
+      titulo="Apariencia"
+      descripcion="En automático sigue al sistema, y cambia solo al anochecer."
+      claseTarjeta="flex flex-col gap-2 p-4 lg:flex-row lg:items-center lg:justify-between lg:px-[18px] lg:py-3"
+    >
+      <span className="hidden text-[15px] font-semibold lg:block">Tema</span>
       <Segmented
         label="Tema"
         value={theme}
         onChange={setTheme}
         options={THEMES.map((t) => ({ value: t, label: THEME_LABELS[t] }))}
+        className="lg:w-[320px]"
       />
-      <p className="text-[13px] leading-[18px] text-muted">
-        En automático sigue al sistema, y cambia solo al anochecer.
-      </p>
-    </Grupo>
+    </SeccionAjustes>
   );
 }

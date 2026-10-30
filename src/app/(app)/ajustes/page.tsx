@@ -1,15 +1,12 @@
-import Link from "next/link";
 import { PageBody, PageHeader } from "@/components/app/page-header";
 import { ExportSettings } from "@/components/ajustes/export-settings";
 import { InvitarSettings } from "@/components/ajustes/invitar-settings";
+import { LosaCuenta } from "@/components/ajustes/losa-cuenta";
 import { SeguridadSettings } from "@/components/ajustes/seguridad-settings";
 import { SubNav } from "@/components/app/sub-nav";
 import { PushSettings } from "@/components/ajustes/push-settings";
 import { ShortcutSettings } from "@/components/ajustes/shortcut-settings";
 import { ThemeSettings } from "@/components/ajustes/theme-settings";
-import { SignOutButton } from "@/components/auth/sign-out-button";
-import { Grupo } from "@/components/ui/card";
-import { Icon } from "@/components/ui/icon";
 import { getBaseUrl } from "@/lib/base-url";
 import { esAdministrador } from "@/lib/invitacion";
 import { contarCuentas } from "@/lib/supabase/consultas-compartidas";
@@ -104,60 +101,27 @@ export default async function AjustesPage() {
 
   return (
     <>
-      <PageHeader title="Ajustes" subtitle={user.user?.email ?? undefined} />
+      <PageHeader title="Ajustes" />
 
       {/*
-        Dos columnas en escritorio.
-
-        Con una sola de 680 px había que desplazarse por seis grupos para llegar
-        a «Sesión», y los cinco primeros dejaban media pantalla en blanco a la
-        derecha. Los grupos son independientes entre sí —ninguno explica al
-        siguiente—, así que reparten bien en dos columnas.
+        El ancho alinea el cuerpo con la cabecera a 1440 px, y cada sección lleva
+        su fila (ver `SeccionAjustes`): nada de repartir bloques de alturas
+        distintas en dos columnas, que deja un hueco al lado de cada uno corto.
       */}
-      <PageBody className="lg:grid lg:max-w-[1080px] lg:grid-cols-2 lg:items-start">
+      <PageBody className="lg:max-w-[1200px] lg:gap-8">
+        <LosaCuenta
+          email={user.user?.email ?? ""}
+          conDosPasos={factores.some((f) => f.status === "verified")}
+          accesos={[
+            { href: "/cuentas", label: "Cuentas", count: accounts },
+            { href: "/categorias", label: "Categorías", count: categories },
+            { href: "/reglas", label: "Reglas de comercio", count: rules },
+          ]}
+        />
+
         <SubNav parent="/ajustes" />
 
         <ThemeSettings />
-
-        <Grupo titulo="Organización" className="hidden lg:block">
-          {[
-            {
-              href: "/categorias",
-              label: "Categorías",
-              icon: "tags",
-              count: categories,
-            },
-            {
-              href: "/cuentas",
-              label: "Cuentas",
-              icon: "wallet",
-              count: accounts,
-            },
-            {
-              href: "/reglas",
-              label: "Reglas de comercio",
-              icon: "repeat",
-              count: rules,
-            },
-          ].map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="fila-pulsable flex min-h-[52px] items-center gap-3 hair-t border-separator px-[18px] py-2 text-fg first:border-t-0"
-            >
-              <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
-                <Icon name={item.icon} size={16} />
-              </span>
-              <span className="flex-1 text-[15px] font-semibold">
-                {item.label}
-              </span>
-              <span className="text-[15px] text-muted tabular-nums">
-                {item.count}
-              </span>
-              <Icon name="chevron-right" size={18} />
-            </Link>
-          ))}
-        </Grupo>
 
         <ShortcutSettings
           devices={devices ?? []}
@@ -180,23 +144,7 @@ export default async function AjustesPage() {
 
         {puedeInvitar ? <InvitarSettings /> : null}
 
-        <Grupo titulo="Sesión">
-          <div className="flex min-h-[60px] items-center gap-3 px-[18px] py-2">
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="truncate text-[15px] font-semibold">
-                {user.user?.email}
-              </span>
-              <span className="text-[13px] leading-[18px] text-muted">
-                {factores.some((f) => f.status === "verified")
-                  ? "Con verificación en dos pasos"
-                  : "Solo con contraseña"}
-              </span>
-            </span>
-            <SignOutButton />
-          </div>
-        </Grupo>
-
-        <p className="px-1 text-center text-[13px] leading-[18px] text-muted lg:col-span-2">
+        <p className="px-1 text-center text-[13px] leading-[18px] text-muted lg:hair-t lg:border-hairline lg:pt-6">
           Cartera · datos en Supabase (Frankfurt) · aislados por usuario
         </p>
       </PageBody>

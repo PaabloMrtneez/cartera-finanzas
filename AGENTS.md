@@ -102,6 +102,12 @@ reales. Si una tarea parece exigir saltarse uno, la tarea está mal planteada.
   conceptos solo consigue cortar palabras— ni para una barra de filtros, que se
   envuelve sola y en columna se queda pegada encima del listado. Resumen y
   Movimientos son de una sola columna a propósito.
+- **Ajustes**: cada sección es una fila (`SeccionAjustes`): título y explicación
+  anclados a la izquierda, controles a la derecha. No repartir sus bloques en dos
+  columnas de tarjetas: con alturas tan distintas, deja un hueco junto a cada uno
+  corto. Dentro de la tarjeta, lo que va en línea se decide con `@container`, no
+  con `lg:`: es la única excepción al punto de ruptura único, porque a 1024 px la
+  tarjeta aún es estrecha.
 - **Nada `sticky` más alto que la ventana.** Un panel anclado que mide más que
   la pantalla deja su parte de abajo —el botón de guardar— fuera de alcance para
   siempre. Antes de anclar algo, medir cuánto ocupa.

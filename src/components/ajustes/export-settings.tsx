@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Grupo } from "@/components/ui/card";
+import { ContenidoFila, FILA_AJUSTE_ENLACE, SeccionAjustes } from "@/components/ajustes/seccion";
 import { Icon } from "@/components/ui/icon";
 
 /**
@@ -33,46 +33,29 @@ const OPCIONES = [
 
 export function ExportSettings() {
   return (
-    <Grupo titulo="Tus datos">
-
+    <SeccionAjustes
+      titulo="Tus datos"
+      descripcion="Se descarga solo lo tuyo. Además hay una copia cifrada semanal del servidor, por si el problema no eres tú."
+    >
       {OPCIONES.map((o) => (
-        <a
-          key={o.href}
-          href={o.href}
-          download
-          className="flex min-h-[60px] items-center gap-3 hair-t border-separator px-[18px] py-2 text-fg first:border-t-0"
-        >
-          <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
-            <Icon name={o.icon} size={16} />
-          </span>
-          <span className="flex min-w-0 flex-1 flex-col">
-            <span className="text-[15px] font-semibold">{o.titulo}</span>
-            <span className="text-[13px] leading-[18px] text-muted">{o.detalle}</span>
-          </span>
+        <a key={o.href} href={o.href} download className={FILA_AJUSTE_ENLACE}>
+          <ContenidoFila
+            icono={<Icon name={o.icon} size={17} />}
+            titulo={o.titulo}
+            detalle={o.detalle}
+          />
           <Icon name="download" size={18} />
         </a>
       ))}
 
-      <Link
-        href="/importar"
-        className="fila-pulsable flex min-h-[60px] items-center gap-3 hair-t border-separator px-[18px] py-2 text-fg"
-      >
-        <span className="flex size-[30px] shrink-0 items-center justify-center rounded-full bg-surface-2 text-muted">
-          <Icon name="arrow-down" size={16} />
-        </span>
-        <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-[15px] font-semibold">Importar del banco</span>
-          <span className="text-[13px] leading-[18px] text-muted">
-            Un extracto en CSV. Se enseña lo que va a entrar antes de escribir nada.
-          </span>
-        </span>
+      <Link href="/importar" className={FILA_AJUSTE_ENLACE}>
+        <ContenidoFila
+          icono={<Icon name="arrow-down" size={17} />}
+          titulo="Importar del banco"
+          detalle="Un extracto en CSV. Se enseña lo que va a entrar antes de escribir nada."
+        />
         <Icon name="chevron-right" size={18} />
       </Link>
-
-      <p className="hair-t border-separator px-[18px] py-3 text-[13px] leading-[18px] text-muted">
-        Se descarga solo lo tuyo. Además hay una copia cifrada semanal del servidor, por si el
-        problema no eres tú.
-      </p>
-    </Grupo>
+    </SeccionAjustes>
   );
 }
