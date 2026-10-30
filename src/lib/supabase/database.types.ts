@@ -32,7 +32,12 @@ export type LoanPart =
   | "INTERESES"
   | "CAPITAL"
   | "LIQUIDACION"
-  | "COMISION_CANCELACION";
+  | "COMISION_CANCELACION"
+  | "AMORTIZACION"
+  | "COMISION_AMORTIZACION";
+
+/** Qué hace una aportación extra con lo que queda (loan_prepayment.mode). */
+export type PrepaymentMode = "PLAZO" | "CUOTA";
 
 type Timestamps = { created_at: string; updated_at: string };
 
@@ -116,6 +121,70 @@ export type Database = {
           type?: CardType;
           nickname?: string | null;
         };
+        Relationships: [];
+      };
+
+      /**
+       * Una tarjeta de Cartera (Wallet) por el nombre que sale en sus avisos →
+       * la cuenta de sus cargos. `name_norm` lo calcula la base (sin tildes ni
+       * mayúsculas) y es único por usuario.
+       */
+      wallet_card: {
+        Row: {
+          id: string;
+          user_id: string;
+          name: string;
+          name_norm: string;
+          account_id: string;
+        } & Timestamps;
+        Insert: {
+          id?: string;
+          user_id: string;
+          name: string;
+          account_id: string;
+        };
+        Update: { name?: string; account_id?: string };
+        Relationships: [];
+      };
+
+      /**
+       * Una aportación extra a un préstamo. Se escribe con
+       * register_loan_prepayment / undo_loan_prepayment; el cuadro efectivo
+       * (loan_cuadro) la tiene en cuenta.
+       */
+      loan_prepayment: {
+        Row: {
+          id: string;
+          user_id: string;
+          loan_id: string;
+          /** Se aplica tras esta cuota (0: antes de la primera). */
+          after_period: number;
+          paid_on: string;
+          amount_cents: number;
+          mode: PrepaymentMode;
+          fee_cents: number;
+          transaction_id: string;
+          transaction_type: EntryType;
+          fee_transaction_id: string | null;
+          fee_transaction_type: EntryType | null;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+
+      /** El envío del Atajo que era el mismo pago que otro ya apuntado. Solo lectura. */
+      ingest_merged: {
+        Row: {
+          user_id: string;
+          external_id: string;
+          transaction_id: string;
+          transaction_type: EntryType;
+          created_at: string;
+        };
+        Insert: never;
+        Update: never;
         Relationships: [];
       };
 
@@ -860,6 +929,12 @@ export type Database = {
           /** La categoría del préstamo (intereses, comisiones y, si cuenta entera, la cuota). */
           interest_category_id: string | null;
           counts_full_installment: boolean;
+          /** El último periodo del cuadro efectivo (con aportaciones en PLAZO, antes que term_months). */
+          effective_term_months: number;
+          /** Todo lo aportado de más. */
+          prepaid_total_cents: number;
+          /** Intereses del cuadro del contrato − los del efectivo. */
+          interest_saved_cents: number;
         };
         Relationships: [];
       };
@@ -1649,7 +1724,23 @@ export type Database = {
           balance_after_cents: number;
           state: "PREVIA" | "COBRADA" | "PENDIENTE" | "ANULADA";
           has_movement: boolean;
+          /** Lo aportado de más justo después de esta cuota. */
+          prepaid_cents: number;
         }[];
+      };
+      register_loan_prepayment: {
+        Args: {
+          p_loan_id: string;
+          p_on: string;
+          p_amount_cents: number;
+          p_mode: PrepaymentMode;
+          p_fee_cents?: number;
+        };
+        Returns: Json;
+      };
+      undo_loan_prepayment: {
+        Args: { p_prepayment_id: string };
+        Returns: undefined;
       };
     };
 

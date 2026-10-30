@@ -53,6 +53,11 @@ export type DatosPrestamo = {
   categoria: string;
   /** true: la cuota entera cuenta como gasto; false: solo los intereses. */
   cuota_entera: boolean;
+  /** Todo lo aportado de más, y lo que se ahorra en intereses con ello. */
+  prepaid_total_cents: number;
+  interest_saved_cents: number;
+  /** Lo aportado antes de la primera cuota (el cuadro no tiene fila para ello). */
+  aportado_antes_cents: number;
 };
 
 /**
@@ -78,6 +83,7 @@ export function FichaPrestamo({
   heroe,
   enTira = false,
   acciones,
+  botones,
 }: {
   p: DatosPrestamo;
   filas: FilaCuadro[];
@@ -87,6 +93,8 @@ export function FichaPrestamo({
   /** La tira de la cabecera ya enseña su cuota y su próxima (es el único activo). */
   enTira?: boolean;
   acciones: ReactNode;
+  /** «Aportación extra» y «Pagar todo lo que queda», si está activo. */
+  botones?: ReactNode;
 }) {
   const activo = p.status === "ACTIVO";
   const devuelto = parteDevuelta(p.principal_paid_cents, p.principal_cents);
@@ -112,6 +120,8 @@ export function FichaPrestamo({
           </div>
           <div className="flex shrink-0 items-center gap-1">{acciones}</div>
         </div>
+
+        {botones ? <div className="flex flex-wrap gap-2">{botones}</div> : null}
 
         <Progreso p={p} devuelto={devuelto} />
 
@@ -148,6 +158,13 @@ export function FichaPrestamo({
             valor={p.categoria}
             detalle={p.cuota_entera ? "la cuota entera" : "los intereses"}
           />
+          {p.interest_saved_cents > 0 ? (
+            <Dato
+              rotulo="Intereses que te ahorras"
+              valor={formatCents(p.interest_saved_cents)}
+              detalle={`aportando ${formatCents(p.prepaid_total_cents)}`}
+            />
+          ) : null}
         </dl>
 
         {descuadre ? (
@@ -179,7 +196,13 @@ export function FichaPrestamo({
       </div>
 
       <div className="hair-t border-hairline lg:col-span-2 lg:row-start-3">
-        <CuadroAmortizacion filas={filas} nombre={p.name} proxima={activo ? p.next_period : null} />
+        <CuadroAmortizacion
+          filas={filas}
+          nombre={p.name}
+          proxima={activo ? p.next_period : null}
+          principal={p.principal_cents}
+          aportadoAntes={p.aportado_antes_cents}
+        />
       </div>
     </Card>
   );

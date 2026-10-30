@@ -144,16 +144,6 @@ async function cifras(uid, hoy) {
   });
 }
 
-async function deudaReal(uid, hoy) {
-  return comoUsuario(uid, async () => {
-    const [a] = await q("select coalesce(sum(debt_cents), 0)::bigint as d from public.v_net_worth");
-    const [b] = await q("select coalesce(sum(abs(debt_cents)), 0)::bigint as d from public.net_worth_monthly(36)");
-    const [c] = await q("select coalesce(sum(abs(debt_cents)), 0)::bigint as d from public.net_worth_daily($1::date - 95, $1::date)", [hoy]);
-    const [l] = await q("select count(*)::int as n from public.v_loan_status");
-    return n(a.d) === 0 && n(b.d) === 0 && n(c.d) === 0 && l.n === 0;
-  });
-}
-
 // --------------------------------------------------------------------------
 // 2. Auditoría (las mismas comprobaciones que scripts/audit-db.mjs)
 // --------------------------------------------------------------------------
@@ -714,14 +704,14 @@ async function main() {
     }
 
     console.log(`\n— Datos reales: ${reales.length} usuarios (solo se informa si cuadra) —\n`);
+    // Antes se comprobaba también que nadie tenía préstamos ni deuda: se
+    // escribió cuando aún no existían. Con préstamos reales lo que importa es
+    // que sus cifras no cambian, que es esta comprobación.
     let iguales = 0;
-    let sinDeuda = 0;
     for (const u of reales) {
       if ((await cifras(u.id, hoy)) === antes.get(u.id)) iguales++;
-      if (await deudaReal(u.id, hoy)) sinDeuda++;
     }
     check(`las cifras de los ${reales.length} usuarios reales no cambian`, iguales === reales.length, `${iguales} de ${reales.length}`);
-    check("ninguno tiene préstamos ni deuda", sinDeuda === reales.length, `${sinDeuda} de ${reales.length}`);
 
     await auditoria();
     await cuadroAlCentimo();

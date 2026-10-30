@@ -7,6 +7,7 @@ import {
   revokeIngestDevice,
   setDefaultIngestAccount,
 } from "@/app/(app)/ajustes/actions";
+import { TarjetasCartera, type TarjetaCartera } from "@/components/ajustes/tarjetas-cartera";
 import { BotonConfirmar } from "@/components/ui/boton-confirmar";
 import { Button } from "@/components/ui/button";
 import { Grupo } from "@/components/ui/card";
@@ -38,6 +39,7 @@ const MOTIVOS: Record<string, string> = {
   invalid_amount: "el importe no se entendía",
   invalid_payload: "faltaba algún campo",
   currency_not_supported: "la moneda no era euro",
+  not_a_charge: "el aviso no era un cargo (una devolución o un aviso de otro tipo)",
   NO_ACCOUNT: "no se supo a qué cuenta iba",
   invalid_date: "la fecha no era válida",
   BAD_DATE: "la fecha no era válida",
@@ -106,6 +108,7 @@ export function ShortcutSettings({
   tarjetas,
   defaultAccountId,
   rechazos,
+  tarjetasCartera,
 }: {
   devices: Device[];
   baseUrl: string;
@@ -119,6 +122,8 @@ export function ShortcutSettings({
   defaultAccountId: string | null;
   /** Los últimos envíos que se rechazaron, con lo que llegó de verdad. */
   rechazos: Rechazo[];
+  /** A qué cuenta van los avisos de cada tarjeta de Cartera. */
+  tarjetasCartera: TarjetaCartera[];
 }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("iPhone");
@@ -146,8 +151,9 @@ export function ShortcutSettings({
   return (
     <Grupo titulo="El Atajo del iPhone">
       <p className="px-[18px] pt-4 pb-2 text-[13px] leading-[18px] text-muted">
-        Cuando pagas con Apple Pay, un Atajo manda el cargo aquí y entra solo. Si una regla de
-        comercio acierta la categoría, se confirma sin preguntarte; si no, espera en pendientes.
+        Cada cargo de tus tarjetas de Cartera —con Apple Pay, online o desde otra app— lo manda un
+        Atajo aquí y entra solo. Si una regla de comercio acierta la categoría, se confirma sin
+        preguntarte; si no, espera en pendientes.
       </p>
       <p className="px-[18px] pb-3 text-[13px] leading-[18px]">
         <Link href="/atajo" className="toque relative font-semibold text-accent-text">
@@ -241,7 +247,9 @@ export function ShortcutSettings({
           <ul className="flex flex-col gap-2">
             {rechazos.map((r) => {
               const datos = (r.payload ?? {}) as Record<string, unknown>;
-              const importe = String(datos.amount ?? "");
+              // El atajo NFC manda amount/merchant; el aviso de Cartera, importe/comercio.
+              const importe = String(datos.amount ?? datos.importe ?? "");
+              const comercio = datos.merchant ?? datos.comercio;
               return (
                 <li key={r.received_at} className="flex flex-col text-[13px] leading-[18px]">
                   <span className="text-muted tabular-nums">
@@ -249,7 +257,7 @@ export function ShortcutSettings({
                   </span>
                   <span className="font-mono">
                     importe: {importe === "" ? "(vacío)" : `«${importe}»`}
-                    {datos.merchant ? ` · comercio: «${String(datos.merchant)}»` : ""}
+                    {comercio ? ` · comercio: «${String(comercio)}»` : ""}
                   </span>
                 </li>
               );
@@ -306,6 +314,8 @@ export function ShortcutSettings({
         </p>
         <FieldError>{errorCuenta}</FieldError>
       </div>
+
+      <TarjetasCartera tarjetas={tarjetasCartera} cuentas={accounts} />
 
       <div className="hair-t border-separator p-3">
         <Dialog

@@ -79,3 +79,67 @@ export async function revokeIngestDevice(id: string): Promise<ActionResult> {
   revalidatePath("/ajustes");
   return { ok: true };
 }
+
+/**
+ * A qué cuenta van los cargos de una tarjeta de Cartera, por el nombre con el
+ * que sale en sus avisos («Santander», «Revolut»). Guardar el mismo nombre otra
+ * vez cambia su cuenta: el nombre se compara sin tildes ni mayúsculas.
+ */
+/** Lo mismo que private.nombre_normalizado: sin mayúsculas, tildes ni espacios de más. */
+function nombreNormalizado(texto: string): string {
+  const de = "áàäâéèëêíìïîóòöôúùüûñç";
+  const a = "aaaaeeeeiiiioooouuuunc";
+  return [...texto.toLowerCase()]
+    .map((c) => (de.includes(c) ? a[de.indexOf(c)] : c))
+    .join("")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export async function guardarTarjetaCartera(nombre: string, accountId: string): Promise<ActionResult> {
+  const limpio = typeof nombre === "string" ? nombre.replace(/\s+/g, " ").trim() : "";
+  if (limpio.length < 1 || limpio.length > 60) {
+    return { ok: false, error: "Escribe el nombre de la tarjeta tal como sale en el aviso (hasta 60 caracteres)." };
+  }
+  if (!esId(accountId)) return { ok: false, error: "Elige una cuenta." };
+
+  const s = await conSesion();
+  if (!s.ok) return s;
+
+  const traducir = (e: { message?: string; code?: string }) =>
+    mensajeErrorDb(e, [[/foreign key|23503/i, "Esa cuenta ya no existe. Recarga la página."]]);
+
+  // Primero se cambia la que ya hubiera con ese nombre; si no hay, se crea.
+  // No con upsert: su UPDATE reescribiría user_id, que la app no puede tocar.
+  const cambiada = await s.supabase
+    .from("wallet_card")
+    .update({ name: limpio, account_id: accountId })
+    .eq("name_norm", nombreNormalizado(limpio))
+    .select("id");
+  if (cambiada.error) return { ok: false, error: traducir(cambiada.error) };
+  if ((cambiada.data ?? []).length === 0) {
+    const fallo = filasTocadas(
+      await s.supabase.from("wallet_card").insert({ user_id: s.userId, name: limpio, account_id: accountId }).select("id"),
+      traducir,
+    );
+    if (fallo) return { ok: false, error: fallo };
+  }
+
+  revalidatePath("/ajustes");
+  return { ok: true };
+}
+
+export async function quitarTarjetaCartera(id: string): Promise<ActionResult> {
+  if (!esId(id)) return { ok: false, error: NO_ENCONTRADO };
+
+  const s = await conSesion();
+  if (!s.ok) return s;
+
+  const fallo = filasTocadas(await s.supabase.from("wallet_card").delete().eq("id", id).select("id"), (e) =>
+    mensajeErrorDb(e),
+  );
+  if (fallo) return { ok: false, error: fallo };
+
+  revalidatePath("/ajustes");
+  return { ok: true };
+}

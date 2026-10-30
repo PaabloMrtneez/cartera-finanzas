@@ -130,6 +130,7 @@ describe("la serie del capital", () => {
       principal_cents: f.capital,
       balance_after_cents: f.pendiente,
       state: i === 0 ? "COBRADA" : "PENDIENTE",
+      prepaid_cents: 0,
     }));
     const serie = serieCapital(300_000, "2026-10-13", filas);
     expect(serie).toHaveLength(4);

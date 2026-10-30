@@ -161,19 +161,7 @@ export function cuadroAmortizacion(e: EntradaCuadro): CuotaDelCuadro[] {
 
   const P = BigInt(principalCents);
   const T = BigInt(tin);
-  const N = BigInt(n);
-  let cuota: bigint;
-  if (T === BigInt(0)) {
-    cuota = redondeo(P, N);
-  } else {
-    let q = BigInt(1);
-    let dn = BigInt(1);
-    for (let k = 0; k < n; k++) {
-      q *= D + T;
-      dn *= D;
-    }
-    cuota = redondeo(P * T * q, D * (q - dn));
-  }
+  const cuota = cuotaFrancesa(P, n, T);
 
   const filas: CuotaDelCuadro[] = [];
   let pendiente = P;
@@ -210,8 +198,320 @@ export function cuadroAmortizacion(e: EntradaCuadro): CuotaDelCuadro[] {
   return filas;
 }
 
+/**
+ * La cuota francesa de `pendiente` a `meses` meses, en céntimos exactos:
+ * `redondeo(P·T·(D+T)ⁿ / (D·((D+T)ⁿ − Dⁿ)))`, o `redondeo(P/n)` sin interés.
+ * La misma cuenta que `public.loan_plan` y que `public.loan_cuadro` cuando una
+ * aportación recalcula la cuota.
+ */
+function cuotaFrancesa(pendiente: bigint, meses: number, T: bigint): bigint {
+  if (T === BigInt(0)) return redondeo(pendiente, BigInt(meses));
+  let q = BigInt(1);
+  let dn = BigInt(1);
+  for (let k = 0; k < meses; k++) {
+    q *= D + T;
+    dn *= D;
+  }
+  return redondeo(pendiente * T * q, D * (q - dn));
+}
+
 const NO_AMORTIZA =
   "Con ese TIN y ese plazo la cuota no amortiza bien el préstamo. Prueba con un plazo más corto.";
+
+// ---------------------------------------------------------------------------
+// Aportaciones extra (amortización anticipada parcial)
+// ---------------------------------------------------------------------------
+
+/**
+ * Qué hace una aportación con lo que queda:
+ *   · PLAZO: la misma cuota; el préstamo termina antes (el que más ahorra).
+ *   · CUOTA: el mismo fin; la cuota baja.
+ */
+export type ModoAportacion = "PLAZO" | "CUOTA";
+
+/** Una aportación extra, tal como la guarda `public.loan_prepayment`. */
+export type Aportacion = {
+  /** Se aplica TRAS esta cuota (0: antes de la primera). */
+  despuesDe: number;
+  importe: number;
+  modo: ModoAportacion;
+};
+
+/** Una fila del cuadro con aportaciones: la de siempre más lo aportado tras ella. */
+export type CuotaConAportacion = CuotaDelCuadro & {
+  /** Lo aportado justo después de esta cuota (ya restado de `pendiente`). */
+  aportado: number;
+};
+
+/** La aportación mínima: 1 €. */
+export const APORTACION_MINIMA = 100;
+
+/**
+ * Cómo está el préstamo justo después de la cuota k (y de lo aportado tras
+ * ella): lo que se debe, la cuota que rige, el último periodo previsto y si el
+ * tramo es de PLAZO (la cuota fija acorta el fin).
+ */
+type EstadoTramo = { pendiente: bigint; cuota: bigint; fin: number; enPlazo: boolean };
+
+/**
+ * El último periodo al que se llega pagando `cuota` desde lo que se debe tras
+ * la cuota `k`, con las reglas de un tramo de PLAZO (la última paga todo; nunca
+ * más allá de `fin`). Es el fin vigente que mantiene una aportación en CUOTA.
+ */
+function finPrevisto(pendiente: bigint, cuota: bigint, fin: number, k: number, T: bigint): number {
+  let p = pendiente;
+  for (let j = k + 1; ; j++) {
+    const intereses = redondeo(p * T, D);
+    if (j >= fin || cuota - intereses >= p) return j;
+    p -= cuota - intereses;
+  }
+}
+
+/** El motor: el cuadro efectivo y el estado tras cada cuota (0 = antes de la primera). */
+function calcularConAportaciones(
+  e: EntradaCuadro,
+  aportaciones: Aportacion[],
+): { filas: CuotaConAportacion[]; estados: Map<number, EstadoTramo> } {
+  const original = cuadroAmortizacion(e); // valida las condiciones
+  const T = BigInt(e.tin);
+  const cero = BigInt(0);
+  if (aportaciones.some((a) => !Number.isInteger(a.despuesDe) || a.despuesDe < 0)) {
+    throw new CuadroInvalido("Aportación fuera del cuadro.");
+  }
+  // Estable: dos aportaciones del mismo mes, en el orden en que se hicieron.
+  const orden = [...aportaciones].sort((a, b) => a.despuesDe - b.despuesDe);
+
+  let pendiente = BigInt(e.principalCents);
+  let cuota = cuotaFrancesa(pendiente, e.plazoMeses, T);
+  let fin = e.plazoMeses;
+  let enPlazo = false;
+  let i = 0;
+  const estados = new Map<number, EstadoTramo>();
+
+  /** Aplica las aportaciones de tras la cuota `k` y devuelve cuánto se aportó. */
+  const aplicar = (k: number): bigint => {
+    let total = cero;
+    while (i < orden.length && orden[i].despuesDe === k) {
+      const a = orden[i++];
+      if (!Number.isSafeInteger(a.importe) || a.importe < APORTACION_MINIMA) {
+        throw new CuadroInvalido("Una aportación tiene que ser de 1 € o más.");
+      }
+      const importe = BigInt(a.importe);
+      if (importe >= pendiente) {
+        throw new CuadroInvalido("Esa aportación paga todo lo que queda: para eso, liquida el préstamo.");
+      }
+      if (a.modo === "CUOTA" && enPlazo) {
+        // Tras reducir plazo, el fin vigente es antes que el del contrato:
+        // reducir cuota tiene que mantener ESE fin, no volver a alargarlo.
+        fin = finPrevisto(pendiente, cuota, fin, k, T);
+      }
+      pendiente -= importe;
+      total += importe;
+      if (a.modo === "CUOTA") {
+        cuota = cuotaFrancesa(pendiente, fin - k, T);
+        enPlazo = false;
+      } else {
+        enPlazo = true;
+      }
+    }
+    estados.set(k, { pendiente, cuota, fin, enPlazo });
+    return total;
+  };
+
+  if (orden.length === 0) {
+    const filas = original.map((f) => ({ ...f, aportado: 0 }));
+    estados.set(0, { pendiente, cuota, fin, enPlazo });
+    for (const f of filas) estados.set(f.periodo, { pendiente: BigInt(f.pendiente), cuota, fin, enPlazo });
+    return { filas, estados };
+  }
+
+  aplicar(0);
+  const filas: CuotaConAportacion[] = [];
+  for (let k = 1; pendiente > cero; k++) {
+    const intereses = redondeo(pendiente * T, D);
+    const ultima = k >= fin || (enPlazo && cuota - intereses >= pendiente);
+    const capital = ultima ? pendiente : cuota - intereses;
+    if (capital <= cero) throw new CuadroInvalido(NO_AMORTIZA);
+    pendiente -= capital;
+    const fila: CuotaConAportacion = {
+      periodo: k,
+      fecha: sumarMeses(e.primeraCuota, k - 1),
+      cuota: Number(intereses + capital),
+      intereses: Number(intereses),
+      capital: Number(capital),
+      pendiente: 0,
+      aportado: 0,
+    };
+    if (ultima) {
+      fin = k;
+      estados.set(k, { pendiente, cuota, fin, enPlazo });
+    } else {
+      fila.aportado = Number(aplicar(k));
+    }
+    fila.pendiente = Number(pendiente);
+    filas.push(fila);
+  }
+  if (i < orden.length) throw new CuadroInvalido("Esa aportación llega cuando el préstamo ya está pagado.");
+  return { filas, estados };
+}
+
+/**
+ * El cuadro EFECTIVO: el original, recalculado en cada aportación. Espejo
+ * exacto de `public.loan_cuadro`; sin aportaciones da el cuadro original fila
+ * a fila (`cuadroAmortizacion`).
+ *
+ * Para cada cuota k:
+ *  1. Antes de ella se aplican, en orden, las aportaciones con `despuesDe =
+ *     k − 1`: bajan el pendiente; en CUOTA se recalcula la cuota francesa con
+ *     los meses que quedan hasta el fin; en PLAZO la cuota no cambia.
+ *  2. intereses = redondeo(pendiente · T / D), como siempre.
+ *  3. Es la última si llega el fin, o si (tras una aportación en PLAZO) la
+ *     cuota ya cubre todo lo que queda: entonces paga TODO el pendiente y la
+ *     deuda acaba en 0 al céntimo.
+ *
+ * La aportación se aplica al cambio de mes (tras la cuota): sin intereses por
+ * días, que el banco puede cobrar aparte (van como comisión).
+ *
+ * Lanza `CuadroInvalido` si una aportación no cabe: menos de 1 €, igual o más
+ * de lo que se debe (eso es liquidar), o después de la última cuota.
+ */
+export function cuadroConAportaciones(e: EntradaCuadro, aportaciones: Aportacion[]): CuotaConAportacion[] {
+  return calcularConAportaciones(e, aportaciones).filas;
+}
+
+/** Los intereses de las cuotas posteriores a `desde`. */
+function interesesDesde(cuadro: CuotaDelCuadro[], desde: number): number {
+  return cuadro.filter((f) => f.periodo > desde).reduce((s, f) => s + f.intereses, 0);
+}
+
+/** La siguiente cuota después de `desde` (0 si ya no queda ninguna). */
+function siguienteCuota(cuadro: CuotaDelCuadro[], desde: number): number {
+  return cuadro.find((f) => f.periodo > desde)?.cuota ?? 0;
+}
+
+/** El efecto de una aportación: cómo queda el préstamo antes y después. */
+export type EfectoAportacion = {
+  finAntes: string;
+  finDespues: string;
+  cuotasAntes: number;
+  cuotasDespues: number;
+  /** La siguiente cuota, antes y después. */
+  cuotaAntes: number;
+  cuotaDespues: number;
+  /** Intereses por pagar desde la última cuota cobrada. */
+  interesesAntes: number;
+  interesesDespues: number;
+  /** Lo que te ahorras en intereses (sin contar la comisión). */
+  ahorro: number;
+  cuadro: CuotaConAportacion[];
+};
+
+/**
+ * Qué pasa si se añade `nueva` a las aportaciones que ya hay, contado desde la
+ * última cuota cobrada (`nueva.despuesDe`). Lanza `CuadroInvalido` como
+ * `cuadroConAportaciones`.
+ */
+export function efectoAportacion(e: EntradaCuadro, aportaciones: Aportacion[], nueva: Aportacion): EfectoAportacion {
+  const antes = cuadroConAportaciones(e, aportaciones);
+  const despues = cuadroConAportaciones(e, [...aportaciones, nueva]);
+  const desde = nueva.despuesDe;
+  const interesesAntes = interesesDesde(antes, desde);
+  const interesesDespues = interesesDesde(despues, desde);
+  return {
+    finAntes: antes[antes.length - 1].fecha,
+    finDespues: despues[despues.length - 1].fecha,
+    cuotasAntes: antes.filter((f) => f.periodo > desde).length,
+    cuotasDespues: despues.filter((f) => f.periodo > desde).length,
+    cuotaAntes: siguienteCuota(antes, desde),
+    cuotaDespues: siguienteCuota(despues, desde),
+    interesesAntes,
+    interesesDespues,
+    ahorro: interesesAntes - interesesDespues,
+    cuadro: despues,
+  };
+}
+
+/** Lo que dice el simulador «quiero terminar en N meses». */
+export type PlanParaTerminar = {
+  meses: number;
+  /** La misma aportación cada mes, desde hoy, reduciendo plazo. */
+  mensual: { extra: number; pagoMes: number; ahorro: number } | null;
+  /** Una sola aportación hoy, reduciendo plazo. */
+  unica: { importe: number; ahorro: number } | null;
+};
+
+/**
+ * El simulador: cuánto hay que aportar para que lo que queda tras la cuota
+ * `desde` se pague en `meses` cuotas o menos. El céntimo mínimo, por búsqueda
+ * binaria sobre las mismas reglas que el cuadro. Null en cada respuesta si no
+ * hace falta (ya terminas en esos meses) o no cabe.
+ */
+export function planParaTerminar(
+  e: EntradaCuadro,
+  aportaciones: Aportacion[],
+  desde: number,
+  meses: number,
+): PlanParaTerminar {
+  const { filas: base, estados } = calcularConAportaciones(e, aportaciones);
+  const restantes = base.filter((f) => f.periodo > desde).length;
+  const estado = estados.get(desde);
+  if (!estado || !Number.isInteger(meses) || meses < 1 || meses >= restantes) {
+    return { meses, mensual: null, unica: null };
+  }
+  const T = BigInt(e.tin);
+  const pendiente = Number(estado.pendiente);
+  const interesesBase = interesesDesde(base, desde);
+
+  /** El menor importe en [1 €, pendiente − 1] que cumple `vale` (monótona). */
+  const minimo = (vale: (x: number) => boolean): number | null => {
+    let bajo = APORTACION_MINIMA;
+    let alto = pendiente - 1;
+    if (alto < bajo || !vale(alto)) return null;
+    while (bajo < alto) {
+      const medio = Math.floor((bajo + alto) / 2);
+      if (vale(medio)) alto = medio;
+      else bajo = medio + 1;
+    }
+    return bajo;
+  };
+
+  // Única: con el cuadro de verdad.
+  const conUnica = (importe: number) =>
+    cuadroConAportaciones(e, [...aportaciones, { despuesDe: desde, importe, modo: "PLAZO" }]);
+  const importeUnico = minimo((x) => conUnica(x).filter((f) => f.periodo > desde).length <= meses);
+  const unica =
+    importeUnico === null
+      ? null
+      : { importe: importeUnico, ahorro: interesesBase - interesesDesde(conUnica(importeUnico), desde) };
+
+  // Mensual: las mismas reglas que el motor con una aportación en PLAZO tras
+  // cada cuota (en PLAZO la cuota no cambia, así que no hace falta rehacer el
+  // cuadro entero cada mes). Si el extra ya cubre lo que queda, eso es
+  // liquidar en ese mes.
+  const conMensual = (extra: number): { cuotas: number; intereses: number } => {
+    const x = BigInt(extra);
+    let pend = estado.pendiente - x;
+    let cuotas = 0;
+    let intereses = BigInt(0);
+    for (let k = desde + 1; ; k++) {
+      const int = redondeo(pend * T, D);
+      const ultima = k >= estado.fin || estado.cuota - int >= pend;
+      pend -= ultima ? pend : estado.cuota - int;
+      intereses += int;
+      cuotas++;
+      if (ultima || x >= pend) break;
+      pend -= x;
+    }
+    return { cuotas, intereses: Number(intereses) };
+  };
+  const extra = minimo((x) => conMensual(x).cuotas <= meses);
+  const mensual =
+    extra === null
+      ? null
+      : { extra, pagoMes: Number(estado.cuota) + extra, ahorro: interesesBase - conMensual(extra).intereses };
+
+  return { meses, mensual, unica };
+}
 
 /**
  * Lo que se tolera que la última cuota se aparte de las demás: el 10 % de la

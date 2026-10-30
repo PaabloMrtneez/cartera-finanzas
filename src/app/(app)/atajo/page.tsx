@@ -14,10 +14,13 @@ export const metadata = { title: "El Atajo del iPhone" };
  * Estaba enlazada desde Ajustes en el prototipo («Ver la guía») pero no
  * existía, así que el token se creaba y nadie decía qué hacer con él.
  *
- * También dice lo que el Atajo NO puede hacer. El disparador de Wallet solo se
- * activa con Apple Pay: ni tarjeta física ni compras online tecleando el
- * número. Descubrir eso a las tres semanas, viendo que faltan gastos, es peor
- * que saberlo desde el principio.
+ * Hay dos atajos. El RECOMENDADO, desde iOS 27, salta con el aviso que Cartera
+ * muestra por CADA cargo de una tarjeta guardada —Apple Pay, online, desde otra
+ * app, recargas— y manda el aviso tal cual (lo lee lib/aviso-cartera.ts). El de
+ * antes, el disparador de Wallet («Transacción»), solo se activa al pagar
+ * acercando el móvil: ni compras online ni tarjeta física. Se queda para iOS 26
+ * o anterior, y dice claramente lo que no captura: descubrirlo a las tres
+ * semanas, viendo que faltan gastos, es peor que saberlo desde el principio.
  */
 export default async function AtajoPage() {
   const endpoint = `${await getBaseUrl()}/api/ingest`;
@@ -61,10 +64,102 @@ export default async function AtajoPage() {
           </p>
         </Card>
 
+        {/*
+          El atajo recomendado (iOS 27). Captura TODOS los cargos de las tarjetas
+          guardadas en Cartera, no solo los de Apple Pay, porque salta con el
+          aviso de Cartera y no con el pago NFC.
+        */}
         <Card>
-          <CardHeader title="Los cinco pasos" />
-          <ol className="flex flex-col">
-            {[
+          <CardHeader title="iOS 27: el aviso de Cartera (recomendado)" />
+          <p className="px-4 pb-3 text-[13px] leading-[18px] text-muted lg:px-5">
+            Cartera avisa de <b>cada cargo</b> de las tarjetas que tienes guardadas: con Apple Pay,
+            online, desde otra app o una recarga. Este atajo salta con ese aviso y lo manda tal cual;
+            la app saca el importe, el comercio y la tarjeta.
+          </p>
+          <Pasos
+            pasos={[
+              {
+                titulo: "Atajos › nuevo atajo › «Al recibir una notificación de»",
+                detalle:
+                  "Elige la app Cartera. Deja «Automatización» activado y «Notificaciones» apagado (si no, te avisa cada vez que se ejecuta).",
+              },
+              {
+                titulo: "Añade «Obtener contenido de la URL» con esta dirección",
+                detalle: endpoint,
+                monospace: true,
+              },
+              {
+                titulo: "Método POST, la cabecera y el cuerpo",
+                detalle:
+                  "La cabecera es la misma que la del otro atajo (abajo). El cuerpo, JSON con los cinco campos de la tabla siguiente.",
+              },
+              {
+                titulo: "Asigna las tarjetas que no se llamen como su cuenta",
+                detalle: (
+                  <>
+                    En{" "}
+                    <Link href="/ajustes" className="font-semibold text-accent-text">
+                      Ajustes › Tarjetas de Cartera
+                    </Link>
+                    . Si la tarjeta «Santander» va a la cuenta Santander, no hace falta; si «Revolut» va
+                    a una cuenta con otro nombre, sí.
+                  </>
+                ),
+              },
+              {
+                titulo: "Si tenías el atajo de Wallet («Transacción»), desactívalo",
+                detalle:
+                  "Este ya recoge también los pagos con Apple Pay. Si conviven, el mismo pago no se apunta dos veces (se empareja), pero sobra.",
+              },
+              {
+                titulo: "Paga algo pequeño, mejor online, y míralo entrar",
+                detalle:
+                  "El botón de probar del editor no sirve: sin un aviso real no hay nada que mandar.",
+              },
+            ]}
+          />
+        </Card>
+
+        <Card>
+          <CardHeader title="Cuerpo del atajo de Cartera" />
+          <p className="px-4 pb-3 text-[13px] leading-[18px] text-muted lg:px-5">
+            JSON, cinco campos de tipo <b>Texto</b>. Los cuatro de color son la variable{" "}
+            <b>Entrada de atajo</b>: tócala después de insertarla y, en «Obtener», elige la parte
+            del aviso que dice cada fila.
+          </p>
+          <ParesTabla
+            filas={[
+              {
+                clave: "source",
+                valor: "cartera",
+                nota: "Escrito a mano, tal cual. Es lo que le dice a la app que es un aviso de Cartera.",
+              },
+              { clave: "tarjeta", valor: "Título", variable: true, nota: "La tarjeta: «Santander», «Revolut». Decide la cuenta." },
+              { clave: "comercio", valor: "Subtítulo", variable: true, nota: "El comercio. La ciudad que a veces lleva detrás se quita sola." },
+              { clave: "importe", valor: "Cuerpo", variable: true, nota: "El importe, «24,00 €»." },
+              {
+                clave: "fecha",
+                valor: "Fecha",
+                variable: true,
+                nota: "Cuándo llegó el aviso. Distingue dos cargos iguales seguidos; sin ella, se usa la hora de llegada.",
+              },
+            ]}
+          />
+          <p className="px-4 pt-1 pb-4 text-[13px] leading-[18px] text-muted lg:px-5">
+            Pagar con una tarjeta a <b>otra de tus tarjetas</b> (recargar Revolut con la de
+            Santander) se apunta como <b>traspaso</b>, no como gasto. Las devoluciones y los cargos
+            en otra moneda no se apuntan: quedan en los rechazos de Ajustes para que los veas.
+          </p>
+        </Card>
+
+        <Card>
+          <CardHeader title="iOS 26 o anterior: el atajo de Wallet" />
+          <p className="px-4 pb-3 text-[13px] leading-[18px] text-muted lg:px-5">
+            Solo salta al pagar acercando el móvil (Apple Pay por NFC). Si tienes iOS 27, mejor el de
+            arriba.
+          </p>
+          <Pasos
+            pasos={[
               {
                 titulo: "Atajos › Automatización › +",
                 detalle:
@@ -90,29 +185,8 @@ export default async function AtajoPage() {
                 detalle:
                   "Si una regla de comercio acierta la categoría, entra confirmado. Si no, te espera en pendientes.",
               },
-            ].map((paso, i) => (
-              <li
-                key={paso.titulo}
-                className="flex gap-3 hair-t border-separator px-4 py-3 first:border-t-0 lg:px-5"
-              >
-                <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-accent-soft text-[13px] font-bold text-accent-text tabular-nums">
-                  {i + 1}
-                </span>
-                <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
-                  <span className="text-[15px] font-semibold">{paso.titulo}</span>
-                  <span
-                    className={
-                      paso.monospace
-                        ? "break-all rounded-sm bg-surface-2 px-2 py-1 font-mono text-[13px] leading-[18px]"
-                        : "text-[13px] leading-[18px] text-muted"
-                    }
-                  >
-                    {paso.detalle}
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ol>
+            ]}
+          />
         </Card>
 
         {/*
@@ -218,15 +292,16 @@ export default async function AtajoPage() {
             <span className="text-warning">
               <Icon name="triangle-alert" size={16} />
             </span>
-            <span className="text-[15px] font-semibold">Lo que el Atajo no puede capturar</span>
+            <span className="text-[15px] font-semibold">Lo que el atajo de Wallet no captura</span>
           </span>
           <p className="mt-2 text-[15px] leading-5 text-muted">
-            El disparador solo se activa con <b>Apple Pay</b>: con la tarjeta en Wallet, por NFC o
-            en apps y webs que lo admitan. <b>No</b> captura los pagos con la tarjeta física ni las
-            compras online tecleando el número.
+            El disparador de Wallet solo se activa al pagar <b>acercando el móvil</b>. <b>No</b>{" "}
+            captura las compras online ni desde otras apps, ni los pagos con la tarjeta física. El
+            atajo del aviso de Cartera (iOS 27) sí recoge todos los cargos de las tarjetas que
+            tengas guardadas en Cartera.
           </p>
           <p className="mt-2 text-[15px] leading-5 text-muted">
-            Esos hay que apuntarlos a mano, o traerlos de una vez con el{" "}
+            Sin iOS 27, esos hay que apuntarlos a mano, o traerlos de una vez con el{" "}
             <Link href="/importar" className="font-semibold text-accent-text">
               importador de extractos
             </Link>
@@ -301,5 +376,39 @@ function ParesTabla({
         </li>
       ))}
     </ul>
+  );
+}
+
+/** Una lista de pasos numerados; el detalle puede ir en letra de código (la URL). */
+function Pasos({
+  pasos,
+}: {
+  pasos: { titulo: string; detalle: React.ReactNode; monospace?: boolean }[];
+}) {
+  return (
+    <ol className="flex flex-col">
+      {pasos.map((paso, i) => (
+        <li
+          key={paso.titulo}
+          className="flex gap-3 hair-t border-separator px-4 py-3 first:border-t-0 lg:px-5"
+        >
+          <span className="flex size-[26px] shrink-0 items-center justify-center rounded-full bg-accent-soft text-[13px] font-bold text-accent-text tabular-nums">
+            {i + 1}
+          </span>
+          <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+            <span className="text-[15px] font-semibold">{paso.titulo}</span>
+            <span
+              className={
+                paso.monospace
+                  ? "break-all rounded-sm bg-surface-2 px-2 py-1 font-mono text-[13px] leading-[18px]"
+                  : "text-[13px] leading-[18px] text-muted"
+              }
+            >
+              {paso.detalle}
+            </span>
+          </span>
+        </li>
+      ))}
+    </ol>
   );
 }

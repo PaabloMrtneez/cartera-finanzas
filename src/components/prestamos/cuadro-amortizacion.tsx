@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 import { formatCents } from "@/lib/money";
@@ -20,16 +21,26 @@ const ESTADO: Record<FilaCuadro["state"], { texto: string; clase: string }> = {
  * debajo— y los rótulos que en escritorio da la cabecera van junto a cada
  * cifra. Cada cifra se escribe UNA vez. Los roles ARIA de tabla se ponen a mano
  * porque la rejilla no es un <table>.
+ *
+ * Las APORTACIONES EXTRA van en su propia fila, justo después de la cuota tras
+ * la que se aplicaron: la cuota enseña lo que quedaba tras ella y la
+ * aportación, lo que queda después. Así se ven las dos bajadas por separado.
  */
 export function CuadroAmortizacion({
   filas,
   nombre,
   proxima,
+  principal,
+  aportadoAntes = 0,
 }: {
   filas: FilaCuadro[];
   nombre: string;
   /** El periodo de la próxima cuota, para resaltarla. */
   proxima: number | null;
+  /** El principal, para lo que queda tras una aportación antes de la primera cuota. */
+  principal: number;
+  /** Lo aportado antes de la primera cuota (no tiene fila de cuota propia). */
+  aportadoAntes?: number;
 }) {
   const cobradas = filas.filter((f) => f.state === "COBRADA" || f.state === "PREVIA").length;
   const fila = cn(
@@ -81,12 +92,16 @@ export function CuadroAmortizacion({
           </span>
         </div>
 
+        {aportadoAntes > 0 ? (
+          <FilaAportacion clase={fila} importe={aportadoAntes} queda={principal - aportadoAntes} />
+        ) : null}
+
         {filas.map((f) => {
           const estado = ESTADO[f.state];
           const esProxima = f.period === proxima;
           return (
+            <Fragment key={f.period}>
             <div
-              key={f.period}
               role="row"
               className={cn(fila, "hair-t border-separator", esProxima && "bg-surface-2")}
             >
@@ -129,13 +144,43 @@ export function CuadroAmortizacion({
                 </span>
                 <span role="cell" className="text-[13px] leading-[18px] text-muted tabular-nums lg:text-right lg:text-[14px] lg:text-fg">
                   <span className="lg:hidden">· queda </span>
-                  {formatCents(f.balance_after_cents)}
+                  {formatCents(f.balance_after_cents + f.prepaid_cents)}
                 </span>
               </div>
             </div>
+            {f.prepaid_cents > 0 ? (
+              <FilaAportacion clase={fila} importe={f.prepaid_cents} queda={f.balance_after_cents} />
+            ) : null}
+            </Fragment>
           );
         })}
       </div>
     </details>
+  );
+}
+
+/** Una aportación extra en el cuadro: cuánto y lo que queda después. */
+function FilaAportacion({ clase, importe, queda }: { clase: string; importe: number; queda: number }) {
+  return (
+    <div role="row" className={cn(clase, "hair-t border-separator")}>
+      <span role="cell" className="w-6 shrink-0 text-accent-text lg:w-auto" aria-hidden>
+        <Icon name="plus" size={13} />
+      </span>
+      <span role="cell" className="min-w-0 flex-1 text-[15px] leading-5 font-semibold text-accent-text lg:text-[14px]">
+        Aportación extra
+      </span>
+      <span role="cell" className="hidden lg:block" />
+      <span role="cell" className="text-[15px] leading-5 font-semibold tabular-nums text-accent-text lg:text-right lg:text-[14px]">
+        {formatCents(importe)}
+      </span>
+      <div className="flex basis-full flex-wrap gap-x-[6px] pl-9 lg:contents">
+        <span role="cell" className="hidden lg:block" />
+        <span role="cell" className="hidden lg:block" />
+        <span role="cell" className="text-[13px] leading-[18px] text-muted tabular-nums lg:text-right lg:text-[14px] lg:text-fg">
+          <span className="lg:hidden">queda </span>
+          {formatCents(queda)}
+        </span>
+      </div>
+    </div>
   );
 }

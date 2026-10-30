@@ -4,10 +4,13 @@ import { useId, useState, useTransition } from "react";
 import {
   cancelLoan,
   createLoan,
+  registerLoanPrepayment,
   settleLoan,
+  undoLoanPrepayment,
   updateLoan,
   updateLoanTerms,
 } from "@/app/(app)/prestamos/actions";
+import { AportacionPrestamo, type DatosAportacion } from "@/components/prestamos/aportacion-prestamo";
 import {
   CondicionesPrestamo,
   type CondicionesIniciales,
@@ -39,14 +42,17 @@ export type PrestamoGestion = {
   /** La categoría y si cuenta la cuota entera: también se cambian siempre. */
   gasto: GastoInicial;
   condiciones: CondicionesIniciales;
+  /** Para calcular y registrar una aportación extra. */
+  aportacion: DatosAportacion;
 };
 
-type Paso = "editar" | "condiciones" | "liquidar" | "cancelar" | "eliminar";
+export type Paso = "editar" | "condiciones" | "aportar" | "liquidar" | "cancelar" | "eliminar";
 
 const TITULOS: Record<Paso, (nombre: string) => string> = {
   editar: (n) => n,
   condiciones: () => "Cambiar las condiciones",
-  liquidar: (n) => `Liquidar ${n}`,
+  aportar: () => "Aportación extra",
+  liquidar: () => "Pagar todo lo que queda",
   cancelar: (n) => `Dejar de seguir ${n}`,
   eliminar: (n) => `Eliminar ${n}`,
 };
@@ -54,6 +60,8 @@ const TITULOS: Record<Paso, (nombre: string) => string> = {
 const DESCRIPCIONES: Record<Paso, string> = {
   editar: "El nombre, la TAE y la categoría se cambian siempre. Las condiciones, solo antes de la primera cuota.",
   condiciones: "Se rehacen el cuadro, el ingreso del dinero y la comisión. Aún no hay cuotas cobradas.",
+  aportar:
+    "Pagas capital de más este mes y el cuadro se recalcula. Pídeselo antes a tu banco: aquí se apunta lo que hayas hecho.",
   liquidar: "Lo has pagado entero, o lo amortizas ahora: la deuda queda a cero.",
   cancelar: "Deja de cobrar cuotas sin mover dinero.",
   eliminar: "Se borra con todos sus movimientos. No se puede deshacer.",
@@ -65,26 +73,33 @@ const DESCRIPCIONES: Record<Paso, string> = {
  * Radix y el formulario no entren en el paquete inicial de la pantalla.
  *
  * La gestión tiene pasos dentro de la misma hoja, como «Eliminar cuenta»: el
- * nombre, la TAE y la categoría (con qué cuenta como gasto) se editan siempre; las condiciones, solo si no hay cuotas
- * cobradas (`updateLoanTerms`); «Liquidar» y «Dejar de seguirlo» cierran el
- * préstamo de dos formas distintas y cada una lo explica; y «Eliminar» pide el
- * nombre escrito.
+ * nombre, la TAE y la categoría (con qué cuenta como gasto) se editan siempre;
+ * las condiciones, solo si no hay cuotas cobradas (`updateLoanTerms`); la
+ * «Aportación extra» recalcula el cuadro; «Liquidar» y «Dejar de seguirlo»
+ * cierran el préstamo de dos formas distintas y cada una lo explica; y
+ * «Eliminar» pide el nombre escrito.
+ *
+ * `pasoInicial` abre la hoja directamente en un paso: la ficha tiene botones
+ * para «Aportación extra» y «Pagar todo lo que queda». Desde ahí, «Volver»
+ * cierra la hoja en vez de ir a editar, que no es de donde se venía.
  */
 export default function PrestamoDialogContent({
   prestamo,
   cuentas,
   categorias,
+  pasoInicial = "editar",
   open,
   onOpenChange,
 }: {
   prestamo?: PrestamoGestion;
+  pasoInicial?: Paso;
   cuentas: { id: string; name: string }[];
   /** Las categorías de gasto, para la del préstamo. */
   categorias: { id: string; name: string }[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [paso, setPaso] = useState<Paso>("editar");
+  const [paso, setPaso] = useState<Paso>(pasoInicial);
   const [error, setError] = useState<string | null>(null);
   /** Cuántas veces se ha pulsado «Limpiar todo»: es la `key` del formulario del alta. */
   const [vuelta, setVuelta] = useState(0);
@@ -94,7 +109,7 @@ export default function PrestamoDialogContent({
 
   function cambiarApertura(abierto: boolean) {
     if (!abierto) {
-      setPaso("editar");
+      setPaso(pasoInicial);
       setError(null);
     }
     onOpenChange(abierto);
@@ -103,6 +118,12 @@ export default function PrestamoDialogContent({
   function ir(siguiente: Paso) {
     setError(null);
     setPaso(siguiente);
+  }
+
+  /** «Volver» desde un paso: a editar, o cerrar si la hoja se abrió en ese paso. */
+  function volver() {
+    if (paso === pasoInicial) cambiarApertura(false);
+    else ir("editar");
   }
 
   /** Corre una acción; si sale bien, cierra la hoja y refresca la pantalla. */
@@ -280,11 +301,21 @@ export default function PrestamoDialogContent({
                 <h3 className="text-[15px] leading-5 font-semibold">Terminar antes de tiempo</h3>
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
                   <p className="flex-1 text-[13px] leading-[18px] text-muted">
-                    <span className="font-semibold text-fg">Liquidar</span>: lo pagas entero (o ya lo
-                    pagaste fuera de la app). Se apunta el pago de lo pendiente y la deuda queda a cero.
+                    <span className="font-semibold text-fg">Aportación extra</span>: pagas capital de más
+                    un mes y eliges terminar antes o pagar menos cada mes.
+                  </p>
+                  <Button variant="secondary" size="compact" onClick={() => ir("aportar")}>
+                    Aportación extra
+                  </Button>
+                </div>
+                <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
+                  <p className="flex-1 text-[13px] leading-[18px] text-muted">
+                    <span className="font-semibold text-fg">Pagar todo lo que queda</span>: lo pagas entero
+                    (o ya lo pagaste fuera de la app). Se apunta el pago de lo pendiente y la deuda queda a
+                    cero.
                   </p>
                   <Button variant="secondary" size="compact" onClick={() => ir("liquidar")}>
-                    Liquidar
+                    Pagar todo
                   </Button>
                 </div>
                 <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:gap-4">
@@ -325,6 +356,29 @@ export default function PrestamoDialogContent({
                 accion: () => ir("editar"),
               })}
             />
+          </form>
+        ) : null}
+
+        {paso === "aportar" ? (
+          <form
+            onSubmit={alSubmit((fd) => registerLoanPrepayment(p.id, fd))}
+            className="flex flex-col gap-4"
+          >
+            <AportacionPrestamo
+              datos={p.aportacion}
+              hoy={hoy}
+              pending={pending}
+              onDeshacer={(id) => ejecutar(() => undoLoanPrepayment(id))}
+            />
+            <FieldError>{error}</FieldError>
+            <DialogFooter>
+              <Button variant="secondary" block onClick={volver} disabled={pending}>
+                Volver
+              </Button>
+              <Button type="submit" block disabled={pending}>
+                {pending ? "Guardando…" : "Registrar aportación"}
+              </Button>
+            </DialogFooter>
           </form>
         ) : null}
 
@@ -370,7 +424,7 @@ export default function PrestamoDialogContent({
             </p>
             <FieldError>{error}</FieldError>
             <DialogFooter>
-              <Button variant="secondary" block onClick={() => ir("editar")} disabled={pending}>
+              <Button variant="secondary" block onClick={volver} disabled={pending}>
                 Volver
               </Button>
               <Button type="submit" block disabled={pending}>

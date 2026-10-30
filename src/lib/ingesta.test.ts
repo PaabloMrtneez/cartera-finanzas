@@ -81,6 +81,20 @@ describe("avisoDePago", () => {
     expect(a.url).toBe("/movimientos/tx-3");
   });
 
+  it("una recarga (aviso de Cartera): traspaso, no gasto", () => {
+    const a = avisoDePago({ id: "tx-4", cents: 2400, merchant: "Revolut", account: "Santander", to_account: "Revoult", kind: "TRANSFER", status: "CONFIRMED" });
+    expect(sinEspacioDuro(a.title)).toBe("Recarga de 24,00 € en Revoult");
+    expect(a.body).toBe("Apuntada como traspaso desde Santander: no cuenta como gasto.");
+    expect(a.url).toBe("/movimientos/tx-4");
+  });
+
+  it("con nota de la base: lo que hay que revisar, no la categoría", () => {
+    const repetido = avisoDePago({ id: "tx-5", cents: 200, merchant: "Cafeteria", category: "Café", status: "PENDING", note: "¿Repetido? En esos minutos…" });
+    expect(repetido.body).toBe("Puede que ya estuviera apuntado. Entra para revisarlo.");
+    const sinCuenta = avisoDePago({ id: "tx-6", cents: 200, merchant: "Cafeteria", status: "PENDING", note: "La tarjeta «Revolut» de Cartera no tiene cuenta…" });
+    expect(sinCuenta.body).toBe("Falta elegir la cuenta de esta tarjeta. Entra para revisarlo.");
+  });
+
   it("sin comercio ni id no se rompe", () => {
     const a = avisoDePago({ cents: 100, merchant: "  ", category: null });
     expect(sinEspacioDuro(a.title)).toBe("Has pagado 1,00 € en un comercio");

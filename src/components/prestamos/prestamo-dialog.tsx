@@ -13,15 +13,18 @@ const Contenido = dynamic(() => import("./prestamo-dialog-content"), { ssr: fals
 
 /**
  * El alta de un préstamo (sin `prestamo`) o su gestión: editar, cambiar las
- * condiciones, liquidar, dejar de seguirlo y eliminar.
+ * condiciones, aportar de más, liquidar, dejar de seguirlo y eliminar.
+ * `paso` la abre directamente en uno (los botones de la ficha).
  */
 export function PrestamoDialog({
   prestamo,
   cuentas,
   categorias,
+  paso,
   trigger,
 }: {
   prestamo?: import("./prestamo-dialog-content").PrestamoGestion;
+  paso?: import("./prestamo-dialog-content").Paso;
   cuentas: { id: string; name: string }[];
   categorias: { id: string; name: string }[];
   trigger: React.ReactNode;
@@ -33,6 +36,7 @@ export function PrestamoDialog({
           prestamo={prestamo}
           cuentas={cuentas}
           categorias={categorias}
+          pasoInicial={paso}
           open={open}
           onOpenChange={onOpenChange}
         />

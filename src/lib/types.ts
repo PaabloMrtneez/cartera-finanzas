@@ -53,6 +53,8 @@ export const LOAN_PARTS = [
   "CAPITAL",
   "LIQUIDACION",
   "COMISION_CANCELACION",
+  "AMORTIZACION",
+  "COMISION_AMORTIZACION",
 ] as const;
 export type LoanPart = (typeof LOAN_PARTS)[number];
 

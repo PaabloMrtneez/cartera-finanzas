@@ -523,6 +523,37 @@ export const loanUpdateSchema = z
   })
   .refine(cuotaConCategoria, CATEGORIA_DE_LA_CUOTA);
 
+/**
+ * Una aportación extra: el importe (1 € o más; que no llegue a lo que se debe
+ * lo comprueba la base), la fecha (por defecto hoy), si reduce plazo o cuota y
+ * la comisión o intereses que cobre el banco, si los hay.
+ */
+export const loanPrepaymentSchema = z.object({
+  id: z.uuid("Préstamo no válido"),
+  on: isoDate.nullable().default(null),
+  amount_cents: z.string().transform((texto, ctx) => {
+    const c = parseAmountToCents(texto);
+    if (c === null || c < 100) {
+      ctx.addIssue({ code: "custom", message: "Escribe la aportación en euros, de 1 € o más, por ejemplo 500,00" });
+      return z.NEVER;
+    }
+    return c;
+  }),
+  mode: z.enum(["PLAZO", "CUOTA"], { error: "Elige si reduce el plazo o la cuota" }),
+  fee_cents: z
+    .string()
+    .default("")
+    .transform((texto, ctx) => {
+      if (texto.trim() === "") return 0;
+      const c = parseAmountToCents(texto);
+      if (c === null || c < 0) {
+        ctx.addIssue({ code: "custom", message: "Escribe la comisión en euros, por ejemplo 25,00" });
+        return z.NEVER;
+      }
+      return c;
+    }),
+});
+
 /** Liquidación anticipada: la fecha (por defecto hoy) y la comisión, si la hay. */
 export const loanSettleSchema = z.object({
   id: z.uuid("Préstamo no válido"),

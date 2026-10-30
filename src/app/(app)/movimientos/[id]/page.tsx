@@ -90,7 +90,7 @@ export default async function DetalleMovimientoPage({
   // cuenta como gasto en la categoría DEL PRÉSTAMO (v_transaction_econ).
   const cuentaComoGasto =
     tx.type === "TRANSFER" &&
-    (tx.loan_part === "CAPITAL" || tx.loan_part === "LIQUIDACION") &&
+    (tx.loan_part === "CAPITAL" || tx.loan_part === "LIQUIDACION" || tx.loan_part === "AMORTIZACION") &&
     prestamo?.counts_full_installment === true;
   const categoryId = cuentaComoGasto ? (prestamo?.interest_category_id ?? null) : tx.category_id;
   const category = categories?.find((c) => c.id === categoryId) ?? null;

@@ -33,7 +33,7 @@ export type CondicionesIniciales = {
 const DIAS = Array.from({ length: 28 }, (_, i) => i + 1);
 
 /** Un campo con su unidad dentro, a la derecha: «€», «%». */
-function ConUnidad({ unidad, ...props }: React.ComponentProps<"input"> & { unidad: string }) {
+export function ConUnidad({ unidad, ...props }: React.ComponentProps<"input"> & { unidad: string }) {
   return (
     <div className="relative">
       <Input {...props} className={cn("pr-9 tabular-nums", props.className)} />

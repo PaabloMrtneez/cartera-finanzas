@@ -65,6 +65,11 @@ export type PagoRegistrado = {
   category?: string | null;
   status?: string;
   inherited?: boolean;
+  /** TRANSFER: una recarga de una cuenta tuya a otra (aviso de Cartera). */
+  kind?: string;
+  to_account?: string | null;
+  /** La nota de la base: «¿Repetido?…» o que falta la cuenta de la tarjeta. */
+  note?: string | null;
 };
 
 /**
@@ -81,10 +86,28 @@ export type PagoRegistrado = {
 export function avisoDePago(pago: PagoRegistrado): Aviso {
   const comercio = pago.merchant?.trim() || "un comercio";
   const cuenta = pago.account?.trim();
+  const url = pago.id ? `/movimientos/${pago.id}` : "/movimientos";
+
+  // Una recarga no es un gasto: se dice que se apuntó como traspaso, que es
+  // lo que hace que no cuente dos veces.
+  if (pago.kind === "TRANSFER") {
+    const destino = pago.to_account?.trim() || comercio;
+    return {
+      title: `Recarga de ${formatCents(Math.abs(pago.cents))} en ${destino}`,
+      body: `Apuntada como traspaso${cuenta ? ` desde ${cuenta}` : ""}: no cuenta como gasto.`,
+      url,
+      tag: `ingesta-${pago.id ?? destino}`,
+    };
+  }
+
   const titulo = `Has pagado ${formatCents(Math.abs(pago.cents))} en ${comercio}`;
 
   let cuerpo: string;
-  if (pago.status === "PENDING" || !pago.category) {
+  if (pago.note?.startsWith("¿Repetido?")) {
+    cuerpo = "Puede que ya estuviera apuntado. Entra para revisarlo.";
+  } else if (pago.note) {
+    cuerpo = "Falta elegir la cuenta de esta tarjeta. Entra para revisarlo.";
+  } else if (pago.status === "PENDING" || !pago.category) {
     cuerpo = "Sin categoría todavía. Entra para asignarle una.";
   } else if (pago.inherited) {
     cuerpo = `Asignado a ${pago.category}, como otras veces.`;
@@ -95,7 +118,7 @@ export function avisoDePago(pago: PagoRegistrado): Aviso {
   return {
     title: titulo,
     body: cuerpo,
-    url: pago.id ? `/movimientos/${pago.id}` : "/movimientos",
+    url,
     tag: `ingesta-${pago.id ?? comercio}`,
   };
 }

@@ -16,6 +16,7 @@ import {
   firstIssue,
   loanCreateSchema,
   loanDeleteSchema,
+  loanPrepaymentSchema,
   loanPreviewSchema,
   loanSettleSchema,
   loanTermsSchema,
@@ -117,6 +118,7 @@ function amable(error: { message?: string; code?: string }): string {
     [/could not find the function|schema cache/i, "Los préstamos aún no están disponibles: falta actualizar la base de datos."],
     [/nombre no coincide/i, "El nombre no coincide con el del préstamo."],
     [/Préstamo no encontrado/i, "Ese préstamo ya no existe."],
+    [/Aportación no encontrada/i, "Esa aportación ya no existe."],
   ]);
 }
 
@@ -357,6 +359,56 @@ export async function settleLoan(
   revalidar();
   const pagado = (data as { settled_cents?: unknown } | null)?.settled_cents;
   return { ok: true, settledCents: typeof pagado === "number" ? pagado : 0 };
+}
+
+// ---------------------------------------------------------------------------
+// Aportación extra (amortización anticipada parcial) y deshacerla
+// ---------------------------------------------------------------------------
+
+/**
+ * Registra una aportación: el traspaso a la cuenta del préstamo (y la
+ * comisión, si la hay) y el cuadro se recalcula desde la última cuota cobrada.
+ * Todo lo comprueba `register_loan_prepayment`; aquí, el formato.
+ */
+export async function registerLoanPrepayment(id: string, formData: FormData): Promise<ActionResult> {
+  const parsed = loanPrepaymentSchema.safeParse({
+    id,
+    on: campo(formData, "on") || null,
+    amount_cents: campo(formData, "amount"),
+    mode: campo(formData, "mode"),
+    fee_cents: campo(formData, "fee"),
+  });
+  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
+
+  const s = await conSesion();
+  if (!s.ok) return s;
+  const { error } = await s.supabase.rpc("register_loan_prepayment", {
+    p_loan_id: parsed.data.id,
+    p_on: parsed.data.on ?? hoyEnMadrid(),
+    p_amount_cents: parsed.data.amount_cents,
+    p_mode: parsed.data.mode,
+    p_fee_cents: parsed.data.fee_cents,
+  });
+  if (error) return { ok: false, error: amable(error) };
+
+  revalidar();
+  revalidatePath("/fijos");
+  return { ok: true };
+}
+
+/** Deshace la última aportación, si aún no se ha cobrado ninguna cuota con ella. */
+export async function undoLoanPrepayment(prepaymentId: string): Promise<ActionResult> {
+  const idOk = loanUpdateSchema.shape.id.safeParse(prepaymentId);
+  if (!idOk.success) return { ok: false, error: "Aportación no válida." };
+
+  const s = await conSesion();
+  if (!s.ok) return s;
+  const { error } = await s.supabase.rpc("undo_loan_prepayment", { p_prepayment_id: idOk.data });
+  if (error) return { ok: false, error: amable(error) };
+
+  revalidar();
+  revalidatePath("/fijos");
+  return { ok: true };
 }
 
 // ---------------------------------------------------------------------------

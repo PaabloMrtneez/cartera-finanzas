@@ -16,6 +16,7 @@ import {
   loanPreviewSchema,
   loanSettleSchema,
   loanUpdateSchema,
+  loanPrepaymentSchema,
   merchantRuleSchema,
   participacionesAportacionSchema,
   positionDeleteSchema,
@@ -131,6 +132,7 @@ const CASOS: Caso[] = [
   { nombre: "loanCreateSchema", esquema: loanCreateSchema, claves: ["name", "tae", "category_id", "counts_full_installment", "terms"] },
   { nombre: "loanUpdateSchema", esquema: loanUpdateSchema, claves: ["id", "name", "tae", "category_id", "counts_full_installment"] },
   { nombre: "loanSettleSchema", esquema: loanSettleSchema, claves: ["id", "on", "fee_cents"] },
+  { nombre: "loanPrepaymentSchema", esquema: loanPrepaymentSchema, claves: ["id", "on", "amount_cents", "mode", "fee_cents"] },
   { nombre: "loanDeleteSchema", esquema: loanDeleteSchema, claves: ["id", "confirm_name"] },
 ];
 

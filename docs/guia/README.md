@@ -202,6 +202,9 @@ Top right:
 - You enter principal, term, nominal rate (and APR if you know it), payment day and start date. Cartera computes the **amortisation schedule** (French method).
 - Every month the **instalment is recorded automatically**, split into interest (an expense) and principal (what reduces the debt).
 - **Outstanding debt**, instalments paid, interest still to pay and end date. A loan can be **paid off** or cancelled.
+- **Extra payment** (*Aportación extra*): you pay extra principal one month and choose **shorter term** (same instalment, you finish earlier: the biggest saving) or **lower instalment** (same end date, you pay less each month). Before saving, the preview shows when you finish, how many instalments are left and **how much interest you save**; the schedule is then recalculated. The last extra payment can be undone until another instalment is charged.
+- **«I want to finish in N months» simulator**: how much extra to pay each month, or as a single payment today, and what you save. One tap fills in the payment.
+- **Pay off the rest** (*Pagar todo lo que queda*) is one tap away on the loan card.
 
 <p align="center">
   <img src="capturas/15-prestamos.webp" alt="Loans" width="250">
@@ -268,10 +271,14 @@ The file is not stored: only its rows are read.
 
 ## 15. The iPhone Shortcut, step by step (iOS 27)
 
-The Shortcut makes **every Apple Pay payment land in Cartera on its own**: you pay, and a few seconds later you get the notification with the amount and the category.
+The Shortcut makes **your payments land in Cartera on their own**: you pay, and a few seconds later you get the notification with the amount and the category.
 
-> [!IMPORTANT]
-> It only works with **Apple Pay** (phone or watch, in shops, apps or websites that accept it). Payments with the physical card or by typing the card number do not trigger it. Those are entered by hand or through [Bank import](#13-bank-import).
+There are two ways to set it up:
+
+- **Recommended: the Wallet notification.** Wallet (*Cartera*) notifies **every charge** on the cards you keep in it: Apple Pay, online, from another app or a top-up. A shortcut triggered by that notification captures them all. See [From the Wallet notification](#from-the-wallet-notification-recommended).
+- **The Wallet automation** (steps 1 to 4). It only fires when you pay **by tapping the phone**: online purchases, payments from other apps or with the physical card do not trigger it. Those would be entered by hand or through [Bank import](#13-bank-import).
+
+Both use the same token. If both are active, the same payment is not recorded twice: they are paired.
 
 > [!NOTE]
 > The iPhone screenshots below are in Spanish. iOS labels are given in English first, with the Spanish label in *italics*. They may differ slightly between iOS versions.
@@ -288,6 +295,25 @@ Inside the app, *See the setup guide* (*Ver la guía para montarlo*) also shows 
   <img src="capturas/20-ajustes-atajo.webp" alt="Connecting a device in Settings" width="250">
   <img src="capturas/21-atajo-guia.webp" alt="The Shortcut guide inside the app" width="250">
 </p>
+
+### From the Wallet notification (recommended)
+
+1. In **Shortcuts**, create a new shortcut and add the trigger **«When I receive a notification from»** (*Al recibir una notificación de*) → pick **Wallet** (*Cartera*). Keep **Automation** on and **Notifications** off.
+2. Add **Get Contents of URL** with the server address (`…/api/ingest`), method **POST** and the same `Authorization` header as in [Step 2](#step-2--the-request-to-cartera).
+3. In **Request Body**, choose **JSON** with five **Text** fields. The last four are the **Shortcut Input** variable (*Entrada de atajo*): insert it, tap it and, under **Get**, pick the part of the notification:
+
+| Key | Value | What it is |
+|---|---|---|
+| `source` | `cartera`, typed by hand | Tells the app this is a Wallet notification. |
+| `tarjeta` | Shortcut Input → **Title** | The card: *Santander*, *Revolut*. Decides the account. |
+| `comercio` | Shortcut Input → **Subtitle** | The merchant. The city it sometimes carries is removed. |
+| `importe` | Shortcut Input → **Body** | The amount, *24,00 €*. |
+| `fecha` | Shortcut Input → **Date** | When the notification arrived. Tells two identical charges apart. |
+
+4. In Cartera, **Settings → The iPhone Shortcut → Wallet cards** (*Tarjetas de Cartera*): assign each card whose name **differs from its account** (the *Revolut* card to your Revolut account, if you named it differently). If the names match, it routes on its own.
+5. If you had the Wallet automation, turn it off: this shortcut also captures Apple Pay payments.
+
+Paying with one card **to another of your cards** (topping up Revolut with the Santander one) is recorded as a **transfer**, not as spending. Refunds and charges in other currencies are not recorded: they stay in the rejections list in Settings.
 
 ### Step 1 · Create the automation
 

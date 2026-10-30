@@ -197,6 +197,9 @@ Hipotecas, préstamos de coche o personales.
 - Se dan de alta con capital, plazo, TIN (y TAE si la sabes), día de cobro y fecha de inicio. Cartera calcula el **cuadro de amortización** (sistema francés).
 - Cada mes la **cuota se apunta sola**, separando intereses (gasto) y capital (lo que reduce la deuda).
 - **Deuda pendiente**, cuotas pagadas, intereses por pagar y fecha de fin. Un préstamo se puede **liquidar** o cancelar.
+- **Aportación extra**: pagas capital de más un mes y eliges **reducir plazo** (la misma cuota y terminas antes, lo que más ahorra) o **reducir cuota** (terminas igual y pagas menos). La vista previa dice antes de guardar cuándo terminas, cuántas cuotas quedan y **cuántos intereses te ahorras**, y el cuadro se recalcula. La última aportación se puede deshacer mientras no se cobre otra cuota.
+- **Simulador «quiero terminar en N meses»**: cuánto pagar de más cada mes, o cuánto aportar de una vez hoy, y lo que ahorras. Un toque rellena la aportación.
+- **Pagar todo lo que queda** está a un toque en la ficha del préstamo.
 
 <p align="center">
   <img src="capturas/15-prestamos.webp" alt="Préstamos" width="250">
@@ -261,10 +264,14 @@ El fichero no se guarda: solo se leen sus filas.
 
 ## 15. El Atajo del iPhone, paso a paso (iOS 27)
 
-El Atajo hace que **cada pago con Apple Pay entre solo en Cartera**: tú pagas, y unos segundos después te llega el aviso con el importe y la categoría.
+El Atajo hace que **tus pagos entren solos en Cartera**: tú pagas, y unos segundos después te llega el aviso con el importe y la categoría.
 
-> [!IMPORTANT]
-> Solo funciona con **Apple Pay** (el móvil o el reloj, en tienda, apps o webs que lo acepten). Los pagos con la tarjeta física o tecleando el número no lo activan. Esos se apuntan a mano o con [Importar](#13-importar-del-banco).
+Hay dos formas de montarlo:
+
+- **Recomendada: el aviso de Cartera.** Cartera (Wallet) avisa de **cada cargo** de las tarjetas que tienes guardadas: con Apple Pay, online, desde otra app o una recarga. Un atajo que salta con ese aviso los recoge todos. Ver [Con el aviso de Cartera](#con-el-aviso-de-cartera-recomendado).
+- **La automatización de Wallet** (pasos 1 a 4). Solo salta al pagar **acercando el móvil**: las compras online, desde otra app o con la tarjeta física no la activan. Esos se apuntarían a mano o con [Importar](#13-importar-del-banco).
+
+Las dos usan el mismo token. Si conviven, el mismo pago no se apunta dos veces: se empareja.
 
 ### Antes de empezar: el token
 
@@ -278,6 +285,25 @@ Dentro de la app, *Ver la guía para montarlo* enseña además la dirección exa
   <img src="capturas/20-ajustes-atajo.webp" alt="Conectar un dispositivo en Ajustes" width="250">
   <img src="capturas/21-atajo-guia.webp" alt="Guía del Atajo dentro de la app" width="250">
 </p>
+
+### Con el aviso de Cartera (recomendado)
+
+1. En **Atajos**, crea un atajo nuevo y añade el disparador **«Al recibir una notificación de»** → elige **Cartera**. Deja **Automatización** activado y **Notificaciones** desactivado.
+2. Añade **Obtener contenido de URL** con la dirección del servidor (`…/api/ingest`), método **POST** y la misma cabecera `Authorization` que en el [Paso 2](#paso-2--la-petición-a-cartera).
+3. En **Cuerpo de la solicitud**, elige **JSON** con cinco campos de tipo **Texto**. Los cuatro últimos son la variable **Entrada de atajo**: insértala, tócala y, en **Obtener**, elige la parte del aviso:
+
+| Clave | Valor | Qué es |
+|---|---|---|
+| `source` | `cartera`, escrito a mano | Le dice a la app que es un aviso de Cartera. |
+| `tarjeta` | Entrada de atajo → **Título** | La tarjeta: *Santander*, *Revolut*. Decide la cuenta. |
+| `comercio` | Entrada de atajo → **Subtítulo** | El comercio. La ciudad que a veces lleva detrás se quita sola. |
+| `importe` | Entrada de atajo → **Cuerpo** | El importe, *24,00 €*. |
+| `fecha` | Entrada de atajo → **Fecha** | Cuándo llegó el aviso. Distingue dos cargos iguales seguidos. |
+
+4. En Cartera, **Ajustes → El Atajo del iPhone → Tarjetas de Cartera**: asigna cada tarjeta que **no se llame como su cuenta** (la tarjeta *Revolut* a tu cuenta de Revolut, si la llamas de otra forma). Si se llama igual, va sola.
+5. Si tenías la automatización de Wallet, desactívala: este atajo ya recoge también los pagos con Apple Pay.
+
+Pagar con una tarjeta a **otra de tus tarjetas** (recargar Revolut con la de Santander) se apunta como **traspaso**, no como gasto. Las devoluciones y los cargos en otra moneda no se apuntan: quedan en los rechazos de Ajustes.
 
 ### Paso 1 · Crear la automatización
 

@@ -7,6 +7,7 @@ import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 import { listaNombres } from "@/lib/graficos";
 import { formatCents, formatCentsPlain } from "@/lib/money";
+import { leerTipo } from "@/lib/prestamos";
 import { fechaCuota, formatTipo, tipoParaCampo, type FilaCuadro } from "@/lib/prestamos-vista";
 import { createClient } from "@/lib/supabase/server";
 
@@ -25,7 +26,7 @@ export const metadata = { title: "Préstamos" };
 export default async function PrestamosPage() {
   const supabase = await createClient();
 
-  const [{ data: estados }, { data: cuentas }, { data: categorias }] = await Promise.all([
+  const [{ data: estados }, { data: cuentas }, { data: categorias }, { data: aportes }] = await Promise.all([
     supabase
       .from("v_loan_status")
       // Los tipos, además, como TEXTO: numeric llega como doble por JSON y se
@@ -37,7 +38,17 @@ export default async function PrestamosPage() {
     supabase.from("account").select("id, name, type, archived").order("name"),
     // La categoría de un préstamo es de gasto (la FK compuesta lo exige).
     supabase.from("category").select("id, name").eq("type", "EXPENSE").order("name"),
+    // Las aportaciones extra, en el orden en que se hicieron: es el orden en
+    // que la base las aplica dentro de una misma cuota (loan_cuadro).
+    supabase
+      .from("loan_prepayment")
+      .select("id, loan_id, after_period, amount_cents, mode, paid_on, created_at")
+      .order("created_at")
+      .order("id"),
   ]);
+
+  const aportesDe = new Map<string, NonNullable<typeof aportes>>();
+  for (const a of aportes ?? []) aportesDe.set(a.loan_id, [...(aportesDe.get(a.loan_id) ?? []), a]);
 
   const prestamos = estados ?? [];
   const cuadros = await Promise.all(
@@ -77,7 +88,9 @@ export default async function PrestamosPage() {
       name: p.name,
       status: p.status,
       principal_cents: p.principal_cents,
-      term_months: p.term_months,
+      // Las cuotas que de verdad tendrá: con aportaciones en «reducir plazo»,
+      // menos que las del contrato.
+      term_months: p.effective_term_months,
       tin_texto: p.tin_texto,
       tae_efectiva_texto: p.tae_efectiva_texto,
       tae_es_contrato: p.tae_texto !== null,
@@ -102,13 +115,36 @@ export default async function PrestamosPage() {
       // Sin categoría todavía: «Intereses» se crea con la primera cuota.
       categoria: (p.interest_category_id && nombreCategoria.get(p.interest_category_id)) || "Intereses",
       cuota_entera: p.counts_full_installment,
+      prepaid_total_cents: p.prepaid_total_cents,
+      interest_saved_cents: p.interest_saved_cents,
+      aportado_antes_cents: (aportesDe.get(p.loan_id) ?? [])
+        .filter((a) => a.after_period === 0)
+        .reduce((suma, a) => suma + a.amount_cents, 0),
     };
   }
 
   function gestion(p: (typeof prestamos)[number]): PrestamoGestion {
     const filas = cuadroDe.get(p.loan_id) ?? [];
     const ultimaCobrada = filas.filter((f) => f.state === "COBRADA").at(-1)?.due_on ?? null;
+    const suyas = aportesDe.get(p.loan_id) ?? [];
+    const ultima = suyas.at(-1);
     return {
+      aportacion: {
+        entrada: {
+          principalCents: p.principal_cents,
+          plazoMeses: p.term_months,
+          tin: leerTipo(p.tin_texto ?? "") ?? 0,
+          primeraCuota: p.first_charge_on,
+        },
+        aportaciones: suyas.map((a) => ({ despuesDe: a.after_period, importe: a.amount_cents, modo: a.mode })),
+        cobradas: p.paid_count,
+        desde: ultimaCobrada && ultimaCobrada > p.start_on ? ultimaCobrada : p.start_on,
+        // Se puede deshacer la última mientras no se haya cobrado otra cuota.
+        ultima:
+          ultima && p.status === "ACTIVO" && ultima.after_period === p.paid_count
+            ? { id: ultima.id, importe: ultima.amount_cents, fecha: ultima.paid_on }
+            : null,
+      },
       id: p.loan_id,
       name: p.name,
       taeContrato: tipoParaCampo(p.tae_texto),
@@ -156,6 +192,35 @@ export default async function PrestamosPage() {
               </Button>
             }
           />
+        }
+        botones={
+          p.status === "ACTIVO" ? (
+            <>
+              <PrestamoDialog
+                prestamo={gestion(p)}
+                cuentas={elegibles}
+                categorias={deGasto}
+                paso="aportar"
+                trigger={
+                  <Button variant="secondary" size="compact">
+                    <Icon name="plus" size={15} />
+                    Aportación extra
+                  </Button>
+                }
+              />
+              <PrestamoDialog
+                prestamo={gestion(p)}
+                cuentas={elegibles}
+                categorias={deGasto}
+                paso="liquidar"
+                trigger={
+                  <Button variant="secondary" size="compact">
+                    Pagar todo lo que queda
+                  </Button>
+                }
+              />
+            </>
+          ) : undefined
         }
       />
     </li>

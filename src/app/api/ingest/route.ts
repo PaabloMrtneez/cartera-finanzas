@@ -9,9 +9,10 @@ import {
   esInstanteIso,
   ultimosCuatro,
 } from "@/lib/ingesta";
+import { idDeAviso, leerAvisoCartera } from "@/lib/aviso-cartera";
 import { parseAmountToCents } from "@/lib/money";
 import { configurarPush, enviarAviso } from "@/lib/push";
-import type { Database } from "@/lib/supabase/database.types";
+import type { Database, Json } from "@/lib/supabase/database.types";
 // Los mensajes de Zod del detalle de un rechazo, en español (H-11).
 import "@/lib/zod-es";
 
@@ -87,6 +88,28 @@ const payloadSchema = z.object({
   /** Identificador propio de cada ejecución del atajo. Da la idempotencia. */
   external_id: z.string().max(128).nullish(),
 });
+
+/**
+ * El aviso de Cartera tal como lo entrega iOS 27 al atajo: Título (la
+ * tarjeta), Subtítulo (el comercio), Cuerpo (el importe) y Fecha. Sin leer
+ * aquí: eso lo hace lib/aviso-cartera.ts, con sus pruebas.
+ */
+const avisoCarteraSchema = z.object({
+  source: z.string().max(40),
+  tarjeta: z.string().max(80).nullish(),
+  comercio: z.string().max(200).nullish(),
+  importe: z.string().max(80),
+  fecha: z.string().max(60).nullish(),
+});
+
+/** ¿Es un aviso de Cartera? Lo dice el campo `source`, fijo en su atajo. */
+function esAvisoDeCartera(cuerpo: unknown): boolean {
+  return (
+    typeof cuerpo === "object" &&
+    cuerpo !== null &&
+    String((cuerpo as { source?: unknown }).source ?? "").trim().toLowerCase() === "cartera"
+  );
+}
 
 /**
  * Lee el cuerpo como texto sin pasar de `max` BYTES. Mira primero el
@@ -186,6 +209,13 @@ async function externalIdPorVentana(
   }
 }
 
+/** Sin las claves `undefined`: lo mismo que haría JSON al enviarlo, pero tipado. */
+function sinIndefinidos(objeto: Record<string, unknown>): { [clave: string]: Json } {
+  return Object.fromEntries(Object.entries(objeto).filter(([, v]) => v !== undefined)) as {
+    [clave: string]: Json;
+  };
+}
+
 function json(body: unknown, status: number, headers?: Record<string, string>) {
   return NextResponse.json(body, {
     status,
@@ -281,72 +311,110 @@ export async function POST(request: Request) {
     return json({ ok: false, error, ...extra }, 422);
   }
 
-  const parsed = payloadSchema.safeParse(parsedBody);
-  if (!parsed.success) {
-    return rechazar("invalid_payload", {
-      detalle: parsed.error.issues.map(
-        (i) => `${i.path.join(".") || "(raíz)"}: ${i.message}`,
-      ),
-    });
+  type Preparado = { cents: number; payload: { [clave: string]: Json } };
+
+  /** El envío del atajo NFC de siempre: comercio, importe, tarjeta, fecha. */
+  async function prepararAtajo(): Promise<NextResponse | Preparado> {
+    const parsed = payloadSchema.safeParse(parsedBody);
+    if (!parsed.success) {
+      return rechazar("invalid_payload", {
+        detalle: parsed.error.issues.map(
+          (i) => `${i.path.join(".") || "(raíz)"}: ${i.message}`,
+        ),
+      });
+    }
+
+    const { amount, currency, ...rest } = parsed.data;
+
+    if (currency.toUpperCase() !== "EUR") {
+      return rechazar("currency_not_supported", { recibido: currency });
+    }
+
+    // 3) El importe se normaliza aquí, con la función probada: entiende tanto el
+    //    formato español como el anglosajón, y nunca pasa por coma flotante.
+    //    Hacerlo en SQL con reemplazos de puntos leería «12.40» como 1.240 €.
+    //    Un número JSON tampoco: negativo o con más de dos decimales se rechaza
+    //    igual que en texto, en vez de quitarle el signo o redondearlo (H-06).
+    const cents = typeof amount === "number" ? centimosDeNumero(amount) : parseAmountToCents(amount);
+
+    if (cents === null || !Number.isSafeInteger(cents) || cents <= 0) {
+      /*
+        El error dice QUÉ llegó. Con solo «invalid_amount» hubo que rebuscar en la
+        base de datos para descubrir que el Atajo mandaba el texto «[Importe]» en
+        lugar de la variable; con el valor delante se ve al primer intento.
+      */
+      const texto = typeof amount === "string" ? amount : String(amount);
+      const sinDigitos = !/\d/.test(texto);
+      return rechazar("invalid_amount", {
+        recibido: texto,
+        pista: sinDigitos
+          ? texto.trim() === ""
+            ? "Llegó vacío. Si estás probando el atajo a mano, es normal: sin un pago real el disparador no tiene importe. Pruébalo pagando algo pequeño."
+            : "Llegó texto sin números, así que el campo lleva el nombre de la variable escrito en lugar de la variable. Bórralo y elígela de la barra de sugerencias del teclado."
+          : typeof amount === "number"
+            ? "El importe tiene que ser mayor que cero y con dos decimales como mucho."
+            : "El importe tiene que ser mayor que cero.",
+      });
+    }
+
+    // 4) La fecha, si viene, tiene que ser ISO 8601 y existir (H-02): «ayer» o
+    //    «19 oct 2026» hacían fallar el `::timestamptz` de la base y el pago se
+    //    perdía con un 500. Ahora se rechaza con rastro y se ve en Ajustes.
+    if (rest.occurred_at != null && rest.occurred_at.trim() !== "" && !esInstanteIso(rest.occurred_at)) {
+      return rechazar("invalid_date", {
+        recibido: rest.occurred_at,
+        pista: "La fecha tiene que ir en formato ISO 8601 (2026-10-19T14:32:00+02:00), o no mandarse.",
+      });
+    }
+
+    // 5) La tarjeta, a sus 4 últimas cifras o a nada (H-02): una que no encaja
+    //    va a la cuenta por defecto en vez de reventar el CHECK de la base.
+    const card = ultimosCuatro(rest.card);
+    const merchant = rest.merchant?.trim() || null;
+    const externalId =
+      rest.external_id?.trim() || (await externalIdPorVentana(supabase, token, cents, merchant, card));
+
+    const payload = {
+      ...rest,
+      currency,
+      card,
+      ...(rest.occurred_at?.trim() ? {} : { occurred_at: undefined }),
+      ...(externalId ? { external_id: externalId } : {}),
+    };
+    return { cents, payload: sinIndefinidos(payload) };
   }
 
-  const { amount, currency, ...rest } = parsed.data;
-
-  if (currency.toUpperCase() !== "EUR") {
-    return rechazar("currency_not_supported", { recibido: currency });
+  /**
+   * El aviso de Cartera (iOS 27): título, subtítulo, cuerpo y fecha tal cual.
+   * Se lee en lib/aviso-cartera.ts; la base elige la cuenta por el nombre de
+   * la tarjeta, convierte las recargas en traspasos y lo empareja con el
+   * atajo NFC si es el mismo pago.
+   */
+  async function prepararAviso(): Promise<NextResponse | Preparado> {
+    const aviso = avisoCarteraSchema.safeParse(parsedBody);
+    if (!aviso.success) {
+      return rechazar("invalid_payload", {
+        detalle: aviso.error.issues.map((i) => `${i.path.join(".") || "(raíz)"}: ${i.message}`),
+      });
+    }
+    const leido = leerAvisoCartera(aviso.data);
+    if (!leido.ok) return rechazar(leido.error, { recibido: aviso.data.importe, pista: leido.pista });
+    return {
+      cents: leido.cents,
+      payload: sinIndefinidos({
+        ...aviso.data,
+        origin: "CARTERA",
+        wallet_card: leido.tarjeta,
+        merchant: leido.comercio,
+        ...(leido.occurredAt ? { occurred_at: leido.occurredAt } : {}),
+        external_id: idDeAviso(aviso.data, leido.cents),
+      }),
+    };
   }
 
-  // 3) El importe se normaliza aquí, con la función probada: entiende tanto el
-  //    formato español como el anglosajón, y nunca pasa por coma flotante.
-  //    Hacerlo en SQL con reemplazos de puntos leería «12.40» como 1.240 €.
-  //    Un número JSON tampoco: negativo o con más de dos decimales se rechaza
-  //    igual que en texto, en vez de quitarle el signo o redondearlo (H-06).
-  const cents = typeof amount === "number" ? centimosDeNumero(amount) : parseAmountToCents(amount);
-
-  if (cents === null || !Number.isSafeInteger(cents) || cents <= 0) {
-    /*
-      El error dice QUÉ llegó. Con solo «invalid_amount» hubo que rebuscar en la
-      base de datos para descubrir que el Atajo mandaba el texto «[Importe]» en
-      lugar de la variable; con el valor delante se ve al primer intento.
-    */
-    const texto = typeof amount === "string" ? amount : String(amount);
-    const sinDigitos = !/\d/.test(texto);
-    return rechazar("invalid_amount", {
-      recibido: texto,
-      pista: sinDigitos
-        ? texto.trim() === ""
-          ? "Llegó vacío. Si estás probando el atajo a mano, es normal: sin un pago real el disparador no tiene importe. Pruébalo pagando algo pequeño."
-          : "Llegó texto sin números, así que el campo lleva el nombre de la variable escrito en lugar de la variable. Bórralo y elígela de la barra de sugerencias del teclado."
-        : typeof amount === "number"
-          ? "El importe tiene que ser mayor que cero y con dos decimales como mucho."
-          : "El importe tiene que ser mayor que cero.",
-    });
-  }
-
-  // 4) La fecha, si viene, tiene que ser ISO 8601 y existir (H-02): «ayer» o
-  //    «19 oct 2026» hacían fallar el `::timestamptz` de la base y el pago se
-  //    perdía con un 500. Ahora se rechaza con rastro y se ve en Ajustes.
-  if (rest.occurred_at != null && rest.occurred_at.trim() !== "" && !esInstanteIso(rest.occurred_at)) {
-    return rechazar("invalid_date", {
-      recibido: rest.occurred_at,
-      pista: "La fecha tiene que ir en formato ISO 8601 (2026-10-19T14:32:00+02:00), o no mandarse.",
-    });
-  }
-
-  // 5) La tarjeta, a sus 4 últimas cifras o a nada (H-02): una que no encaja
-  //    va a la cuenta por defecto en vez de reventar el CHECK de la base.
-  const card = ultimosCuatro(rest.card);
-  const merchant = rest.merchant?.trim() || null;
-  const externalId =
-    rest.external_id?.trim() || (await externalIdPorVentana(supabase, token, cents, merchant, card));
-
-  const payload = {
-    ...rest,
-    currency,
-    card,
-    ...(rest.occurred_at?.trim() ? {} : { occurred_at: undefined }),
-    ...(externalId ? { external_id: externalId } : {}),
-  };
+  const preparado = esAvisoDeCartera(parsedBody) ? await prepararAviso() : await prepararAtajo();
+  if (preparado instanceof NextResponse) return preparado;
+  const { cents, payload } = preparado;
 
   const { data, error } = await supabase.rpc("ingest_transaction", {
     p_token: token,
@@ -384,6 +452,10 @@ export async function POST(request: Request) {
     merchant?: string | null;
     account?: string | null;
     inherited?: boolean;
+    merged?: boolean;
+    kind?: string;
+    to_account?: string | null;
+    note?: string | null;
   };
 
   if (!result.ok) {

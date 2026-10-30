@@ -32,6 +32,7 @@ export default async function AjustesPage() {
     { data: rechazos },
     { data: cardList },
     { data: suscripciones },
+    { data: tarjetasCartera },
   ] = await Promise.all([
     supabase.auth.getUser(),
     Promise.all([
@@ -74,6 +75,8 @@ export default async function AjustesPage() {
       .select("id, user_agent, created_at")
       .is("failed_at", null)
       .order("created_at"),
+    // Las tarjetas de Cartera y su cuenta: el aviso las nombra, no da dígitos.
+    supabase.from("wallet_card").select("id, name, account_id").order("name"),
   ]);
 
   const [categories, accounts, rules] = counts.map((c) => c.count ?? 0);
@@ -163,6 +166,7 @@ export default async function AjustesPage() {
           tarjetas={tarjetas}
           defaultAccountId={profile?.default_ingest_account_id ?? null}
           rechazos={rechazos ?? []}
+          tarjetasCartera={tarjetasCartera ?? []}
         />
 
         <PushSettings

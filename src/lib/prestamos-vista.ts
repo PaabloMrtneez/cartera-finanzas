@@ -235,6 +235,8 @@ export type FilaCuadro = {
   principal_cents: number;
   balance_after_cents: number;
   state: "PREVIA" | "COBRADA" | "PENDIENTE" | "ANULADA";
+  /** Lo aportado de más justo después de esta cuota (0 si nada). */
+  prepaid_cents: number;
 };
 
 export type PuntoCapital = {
@@ -322,6 +324,10 @@ export function origenMovimientoPrestamo(a: {
       return `Liquidación ${de}`;
     case "COMISION_CANCELACION":
       return `Comisión de cancelación ${de}`;
+    case "AMORTIZACION":
+      return `Aportación extra ${de}`;
+    case "COMISION_AMORTIZACION":
+      return `Comisión de la aportación extra ${de}`;
   }
 }
 

@@ -140,6 +140,7 @@ export async function GET(request: Request) {
     metas,
     tarjetas,
     prestamos,
+    aportacionesPrestamos,
     posiciones,
     participaciones,
     valoraciones,
@@ -164,6 +165,9 @@ export async function GET(request: Request) {
     leerTodo((d, h) => supabase.from("savings_goal").select("*").order("id").range(d, h)),
     leerTodo((d, h) => supabase.from("card").select("*").order("id").range(d, h)),
     leerTodo((d, h) => supabase.from("loan").select("*").order("id").range(d, h)),
+    leerTodo((d, h) =>
+      supabase.from("loan_prepayment").select("*").order("created_at").order("id").range(d, h),
+    ),
     leerTodo((d, h) => supabase.from("investment_position").select("*").order("id").range(d, h)),
     leerTodo((d, h) =>
       supabase.from("position_unit_event").select("*").order("date").order("seq").range(d, h),
@@ -183,6 +187,7 @@ export async function GET(request: Request) {
     metas,
     tarjetas,
     prestamos,
+    aportacionesPrestamos,
     posiciones,
     participaciones,
     valoraciones,
@@ -208,6 +213,7 @@ export async function GET(request: Request) {
       metas: metas.data,
       tarjetas: tarjetas.data,
       prestamos: prestamos.data,
+      aportaciones_prestamos: aportacionesPrestamos.data,
       posiciones: posiciones.data,
       participaciones: participaciones.data,
       valoraciones: valoraciones.data,
