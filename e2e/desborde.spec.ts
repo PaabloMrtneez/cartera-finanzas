@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { pantallaQuieta } from "./helpers";
 
 /**
  * Robustez de maqueta: ninguna pantalla se desplaza en horizontal en los anchos
@@ -57,7 +58,7 @@ test("ningún texto visible por debajo de 13 px", async ({ page }) => {
     for (const ruta of RUTAS) {
       await page.goto(ruta);
       await page.locator("h1").first().waitFor();
-      await page.waitForTimeout(700);
+      await pantallaQuieta(page);
       const hallados = await page.evaluate(() => {
         const out = new Map<string, number>();
         const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
@@ -65,7 +66,10 @@ test("ningún texto visible por debajo de 13 px", async ({ page }) => {
           const texto = n.textContent?.trim();
           const el = n.parentElement;
           if (!texto || !el) continue;
-          if (el.closest("[aria-hidden='true'], .sr-only, script, style, nextjs-portal")) continue;
+          // Lo `aria-hidden` SÍ cuenta: lo oculta al lector de pantalla, no a
+          // la vista. Saltárselo dejó pasar todos los ejes de los gráficos a
+          // 11 px (auditoría del 30 de octubre).
+          if (el.closest(".sr-only, script, style, nextjs-portal")) continue;
           const r = el.getBoundingClientRect();
           if (!r.width || !r.height) continue;
           const s = getComputedStyle(el);

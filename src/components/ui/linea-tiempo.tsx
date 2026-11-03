@@ -164,7 +164,7 @@ export function LineaTiempo({
         </div>
 
         <div
-          className="relative h-[14px] text-[11px] leading-[14px] text-muted tabular-nums"
+          className="relative h-[18px] text-[13px] leading-[18px] text-muted tabular-nums"
           aria-hidden
         >
           <span className="absolute top-0 left-0 font-semibold tracking-[0.04em] text-warning uppercase">

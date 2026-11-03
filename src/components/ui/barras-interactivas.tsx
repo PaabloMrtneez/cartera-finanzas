@@ -258,17 +258,17 @@ export function BarrasInteractivas({
                 toque. Sigue hasta el canal de su rótulo. */}
             {media ? (
               <span
-                className="pointer-events-none absolute right-[-44px] left-0 border-t-[1.5px] border-dashed border-fg opacity-45"
+                className="pointer-events-none absolute right-[-56px] left-0 border-t-[1.5px] border-dashed border-fg opacity-45"
                 style={{ bottom: `${alturaMedia}%` }}
                 aria-hidden
               />
             ) : null}
           </div>
           {media ? (
-            <div className={cn("relative w-11 shrink-0", claseAlto)} aria-hidden>
+            <div className={cn("relative w-14 shrink-0", claseAlto)} aria-hidden>
               <span
                 className={cn(
-                  "absolute right-0 text-[11px] leading-[14px] font-semibold tracking-[0.04em] text-muted uppercase",
+                  "absolute right-0 text-[13px] leading-[18px] font-semibold tracking-[0.04em] text-muted uppercase",
                   rotuloMediaArriba ? "-translate-y-[3px]" : "translate-y-[calc(100%+3px)]",
                 )}
                 style={{ bottom: `${alturaMedia}%` }}
@@ -279,7 +279,7 @@ export function BarrasInteractivas({
           ) : null}
         </div>
 
-        <div ref={eje} className={cn("flex", media && "pr-11")} aria-hidden>
+        <div ref={eje} className={cn("flex", media && "pr-14")} aria-hidden>
           {barras.map((b, i) => {
             const resaltada = activo !== null ? i === activo : i === marcada;
             // Los que no caben se quedan invisibles —no fuera—: así cada
@@ -288,7 +288,7 @@ export function BarrasInteractivas({
               <span
                 key={b.clave}
                 className={cn(
-                  "min-w-0 flex-1 text-center text-[11px] leading-[14px] whitespace-nowrap first-letter:uppercase",
+                  "min-w-0 flex-1 text-center text-[13px] leading-[18px] whitespace-nowrap first-letter:uppercase",
                   "transition-colors duration-150 ease-out",
                   resaltada ? "font-semibold text-fg" : "text-muted",
                   !rotulados[i] && "invisible",

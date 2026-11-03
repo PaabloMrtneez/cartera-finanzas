@@ -30,7 +30,7 @@ export type CapaArea = {
 
 /** Aire a la izquierda; el canal de la escala va a la derecha, como en la curva. */
 const MX = 6;
-const CANAL_ESCALA = 46;
+const CANAL_ESCALA = 54;
 const MT = 10;
 const MB = 8;
 const CIFRA_SVG = {
@@ -181,7 +181,7 @@ export function AreaApilada({
                   y={y(t)}
                   dominantBaseline="middle"
                   textAnchor="end"
-                  fontSize={11}
+                  fontSize={13}
                   fill="var(--muted)"
                   style={CIFRA_SVG}
                 >
@@ -241,7 +241,7 @@ export function AreaApilada({
         </div>
 
         <div
-          className="relative h-[14px] text-[11px] leading-[14px] text-muted tabular-nums"
+          className="relative h-[18px] text-[13px] leading-[18px] text-muted tabular-nums"
           aria-hidden
         >
           {marcas

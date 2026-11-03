@@ -53,8 +53,8 @@ export type GuiaLinea = { valor: number; rotulo: string };
 
 /** Aire a la izquierda y a la derecha cuando no hay escala. */
 const MX = 6;
-/** El canal de la escala, a la derecha, como en una esfera. */
-const CANAL_ESCALA = 46;
+/** El canal de la escala, a la derecha, como en una esfera (rótulos de 13 px). */
+const CANAL_ESCALA = 54;
 /** Por debajo de este ancho, las anotaciones son discretas: no se amontonan. */
 const ANCHO_HOLGADO = 560;
 /** El oro del espectro, para las marcas sobre la curva. */
@@ -334,7 +334,7 @@ export function LineaInteractiva({
                       y={y(t)}
                       dominantBaseline="middle"
                       textAnchor="end"
-                      fontSize={11}
+                      fontSize={13}
                       fill="var(--muted)"
                       style={CIFRA_SVG}
                     >
@@ -370,7 +370,7 @@ export function LineaInteractiva({
                 <text
                   x={MX}
                   y={y(g.valor) - 5}
-                  fontSize={11}
+                  fontSize={13}
                   fontWeight={600}
                   letterSpacing="0.06em"
                   fill={ORO_TEXTO}
@@ -586,7 +586,7 @@ export function LineaInteractiva({
         </div>
 
         {/* El eje del tiempo: unos pocos rótulos, colocados donde caen. */}
-        <div className="relative h-[14px] text-[11px] leading-[14px] text-muted tabular-nums" aria-hidden>
+        <div className="relative h-[18px] text-[13px] leading-[18px] text-muted tabular-nums" aria-hidden>
           {marcas
             .filter((i, k, a) => i >= 0 && i < total && a.indexOf(i) === k)
             .map((i) => {
@@ -673,8 +673,8 @@ type Caja = { x0: number; x1: number; y0: number; y1: number };
 
 const solapan = (a: Caja, b: Caja) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
 
-/** Ancho aproximado de un rótulo de 11 px en la de cifras. */
-const anchoTexto = (t: string) => t.length * 6.6 + 4;
+/** Ancho aproximado de un rótulo de 13 px en la de cifras. */
+const anchoTexto = (t: string) => t.length * 7.8 + 4;
 
 /**
  * MÁX, MÍN y HOY en oro, escritos sobre la curva. En una caja holgada van
@@ -716,7 +716,7 @@ function Anotaciones({
       ty,
       a,
       arriba,
-      caja: { x0, x1: x0 + w, y0: ty - 11, y1: ty + 3 },
+      caja: { x0, x1: x0 + w, y0: ty - 13, y1: ty + 3 },
     };
   };
 
@@ -729,7 +729,7 @@ function Anotaciones({
   const cajaHoy: Caja = {
     x0: hoy.x + 4 - wHoy,
     x1: hoy.x + 6,
-    y0: tyHoy - 11,
+    y0: tyHoy - 13,
     y1: tyHoy + 3,
   };
 
@@ -759,7 +759,7 @@ function Anotaciones({
               stroke={ORO}
             />
             <circle cx={p.x} cy={p.y} r={3} fill="var(--surface)" stroke={ORO} strokeWidth={1.25} />
-            <text x={p.x} y={e.ty} textAnchor={e.a} fontSize={11} fill={ORO_TEXTO} style={CIFRA_SVG}>
+            <text x={p.x} y={e.ty} textAnchor={e.a} fontSize={13} fill={ORO_TEXTO} style={CIFRA_SVG}>
               <tspan fontWeight={600} letterSpacing="0.06em">
                 {e.clave === "max" ? "MÁX" : "MÍN"}
               </tspan>{" "}
@@ -772,7 +772,7 @@ function Anotaciones({
         x={hoy.x + 6}
         y={tyHoy}
         textAnchor="end"
-        fontSize={11}
+        fontSize={13}
         fontWeight={600}
         letterSpacing="0.06em"
         fill={ORO_TEXTO}

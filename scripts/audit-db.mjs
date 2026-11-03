@@ -73,9 +73,15 @@ const CHECKS = [
   {
     name: "Ninguna clave foránea a tabla de usuario sin llevar user_id",
     why: "La seguridad por filas no cubre las claves foráneas: sin user_id se pueden referenciar filas ajenas.",
+    // «Tabla de usuario» = la que tiene user_id. Antes se miraba toda clave
+    // foránea y salían como fallo las que apuntan a un catálogo compartido
+    // (instrument, el fondo o la acción que siguen varias posiciones): ahí no
+    // hay filas ajenas que referenciar. Que la app no pueda escribir en esos
+    // catálogos lo comprueba la regla siguiente.
     sql: `with fk as (
             select con.conname, con.conrelid::regclass::text as tabla,
                    con.confrelid::regclass::text as referencia,
+                   con.confrelid as referencia_oid,
                    array(select attname from pg_attribute
                          where attrelid = con.conrelid and attnum = any(con.conkey)) as cols
             from pg_constraint con
@@ -86,6 +92,9 @@ const CHECKS = [
           select conname || ' (' || tabla || ' -> ' || referencia || ')' as objeto
           from fk
           where referencia not in ('auth.users')
+            and exists (select 1 from pg_attribute a
+                        where a.attrelid = fk.referencia_oid and a.attname = 'user_id'
+                          and a.attnum > 0 and not a.attisdropped)
             and not ('user_id' = any(cols))
             -- Excepciones justificadas: apuntan a ingest_device por su clave
             -- primaria global. El usuario no tiene ningún privilegio de
@@ -95,6 +104,19 @@ const CHECKS = [
             -- partir del token del dispositivo.
             and conname not in ('ingest_bucket_device_id_fkey',
                                 'ingest_dead_letter_device_id_fkey')`,
+  },
+  {
+    name: "Las tablas compartidas (sin user_id) no las escribe la app",
+    why: "Un catálogo común (fondos, precios, tipos de cambio) que un usuario pudiera tocar cambiaría las cifras de todos.",
+    sql: `select c.relname as objeto
+          from pg_class c
+          join pg_namespace n on n.oid = c.relnamespace
+          where n.nspname = 'public' and c.relkind = 'r'
+            and not exists (select 1 from pg_attribute a
+                            where a.attrelid = c.oid and a.attname = 'user_id'
+                              and a.attnum > 0 and not a.attisdropped)
+            and (has_table_privilege('authenticated', c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE')
+                 or has_table_privilege('anon', c.oid, 'INSERT, UPDATE, DELETE, TRUNCATE'))`,
   },
 ];
 

@@ -194,12 +194,12 @@ export function indiceColumna(x: number, ancho: number, total: number): number {
 }
 
 /**
- * Lo que ocupa un rótulo del eje de barras (11 px, Inter) mientras no se ha
- * podido medir —en el render del servidor, o con el gráfico oculto—: 8 px
- * por carácter, que es estimar por arriba («May» en negrita mide 23 px;
- * «2026», 28). Sobrar solo cuesta un rótulo menos hasta medir.
+ * Lo que ocupa un rótulo del eje de barras (13 px, Inter) mientras no se ha
+ * podido medir —en el render del servidor, o con el gráfico oculto—: 9,5 px
+ * por carácter, que es estimar por arriba («May» en negrita mide unos 27 px;
+ * «2026», 33). Sobrar solo cuesta un rótulo menos hasta medir.
  */
-export const EJE_PX_POR_CARACTER = 8;
+export const EJE_PX_POR_CARACTER = 9.5;
 
 /** El aire mínimo entre dos rótulos vecinos del eje, en píxeles. */
 export const EJE_SEPARACION = 6;

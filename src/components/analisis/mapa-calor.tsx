@@ -240,7 +240,7 @@ function Rejilla({
           {rotulosFilas.map((r, f) => (
             <span
               key={r}
-              className="absolute right-0 left-0 flex items-center text-[11px] leading-[14px] text-muted tabular-nums"
+              className="absolute right-0 left-0 flex items-center text-[13px] leading-[18px] text-muted tabular-nums"
               style={{ top: yDe(f), height: altoFila }}
             >
               {r}
@@ -255,10 +255,7 @@ function Rejilla({
               <span
                 key={c}
                 className={cn(
-                  "absolute top-0 -translate-x-1/2 whitespace-nowrap text-muted tabular-nums",
-                  rotulosColumnas.length > 7
-                    ? "text-[11px] leading-[14px]"
-                    : "text-[13px] leading-[18px]",
+                  "absolute top-0 -translate-x-1/2 text-[13px] leading-[18px] whitespace-nowrap text-muted tabular-nums",
                 )}
                 style={{ left: xDe(c) + lado / 2 }}
               >
