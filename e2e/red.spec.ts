@@ -31,6 +31,8 @@ async function rellenarGasto(page: Page, descripcion: string) {
 async function contar(page: Page, descripcion: string) {
   await page.goto(`/movimientos?mes=todo&q=${encodeURIComponent(descripcion)}`);
   await page.getByRole("heading", { name: "Movimientos" }).first().waitFor();
+  // El título ya sale en el esqueleto de carga: contar ahí da 0 sin que falte nada.
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
   return page.getByRole("link", { name: new RegExp(escaparRegExp(descripcion)) }).count();
 }
 

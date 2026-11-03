@@ -55,11 +55,18 @@ async function createUser(email) {
   return (await response.json()).id;
 }
 
+/**
+ * Borra un usuario de prueba y dice si lo consiguió. Antes no miraba la
+ * respuesta: cuando el borrado fallaba, el usuario se quedaba en producción sin
+ * que nada lo dijera (quedaron tres, con su cuenta, a lo largo de octubre).
+ */
 async function deleteUser(id) {
-  await fetch(`${API}/auth/v1/admin/users/${id}`, {
+  const response = await fetch(`${API}/auth/v1/admin/users/${id}`, {
     method: "DELETE",
     headers: { apikey: SECRET, Authorization: `Bearer ${SECRET}` },
   });
+  if (!response.ok) return `${response.status} ${(await response.text()).slice(0, 200)}`;
+  return null;
 }
 
 /**
@@ -96,8 +103,9 @@ async function main() {
   await client.connect();
 
   const stamp = Date.now();
-  const emailA = `cartera-test-a-${stamp}@example.com`;
-  const emailB = `cartera-test-b-${stamp}@example.com`;
+  // @cartera.local, como todo usuario de prueba: si alguno quedara, se reconoce.
+  const emailA = `cartera-test-a-${stamp}@cartera.local`;
+  const emailB = `cartera-test-b-${stamp}@cartera.local`;
   let userA, userB;
 
   try {
@@ -349,8 +357,20 @@ async function main() {
       ko("El saldo se deriva de los movimientos", `Esperado -7000, obtenido ${balance.rows[0].balance_cents}`);
     }
   } finally {
-    if (userA) await deleteUser(userA);
-    if (userB) await deleteUser(userB);
+    console.log("\n— Limpieza —");
+    // El factor de B se mete a mano y sin secreto: con él, GoTrue no puede ni
+    // cargar al usuario («Database error loading user», 500) y el borrado
+    // fallaba. Se quita antes, como lo único que la prueba metió por debajo.
+    if (userB) {
+      await client.query("delete from auth.mfa_factors where user_id = $1 and friendly_name = 'prueba-aislamiento'", [userB]);
+    }
+    for (const [nombre, id] of [["A", userA], ["B", userB]]) {
+      if (!id) continue;
+      const fallo = await deleteUser(id);
+      const { rows } = await client.query("select 1 from auth.users where id = $1", [id]);
+      if (!fallo && rows.length === 0) ok(`El usuario de prueba ${nombre} queda borrado`);
+      else ko(`El usuario de prueba ${nombre} queda borrado`, fallo ?? "la API respondió bien, pero sigue en auth.users");
+    }
     await client.end();
   }
 

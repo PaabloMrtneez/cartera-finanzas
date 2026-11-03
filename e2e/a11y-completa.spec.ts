@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import type { Result } from "axe-core";
-import { aplicarBypassVercel } from "./helpers";
+import { aplicarBypassVercel, pantallaQuieta } from "./helpers";
 
 /**
  * Accesibilidad COMPLETA: lo que `a11y.spec.ts` no cubría.
@@ -30,6 +30,7 @@ function detalle(v: Result[]) {
 }
 
 async function axe(page: Page, etiqueta: string) {
+  await pantallaQuieta(page);
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).exclude("nextjs-portal").analyze();
   console.log(`[a11y] ${etiqueta}: ${violations.length ? "\n" + detalle(violations) : "sin violaciones"}`);
   return violations;

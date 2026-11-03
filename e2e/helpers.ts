@@ -16,6 +16,25 @@ export const CUENTA_INVERSION = "Indexa Capital";
 export const CUENTA_VISA = "Visa";
 export const POSICION = "MSCI World";
 
+/**
+ * Espera a que la pantalla esté quieta: sin esqueleto de carga y sin
+ * animaciones de entrada en curso.
+ *
+ * Existe por el contraste intermitente de axe en Resumen, Patrimonio,
+ * Inversiones…: el título ya sale en el esqueleto, así que «esperar al
+ * título» dejaba analizar a mitad del streaming o del fundido de entrada
+ * (`animate-rise`), con el texto aún semitransparente. Las animaciones
+ * infinitas (el brillo del esqueleto) no cuentan: nunca acaban.
+ */
+export async function pantallaQuieta(page: Page): Promise<void> {
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
+  await page.waitForFunction(() =>
+    document
+      .getAnimations()
+      .every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity),
+  );
+}
+
 /** Escapa un texto para usarlo dentro de una expresión regular. */
 export function escaparRegExp(texto: string): string {
   return texto.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");

@@ -291,7 +291,7 @@ export default function PrestamoDialogContent({
               ) : (
                 <p className="text-[13px] leading-[18px] text-muted">
                   Ya no se pueden cambiar: hay cuotas cobradas y el cuadro tiene que seguir cuadrando con
-                  ellas. Si lo amortizas entero, usa «Liquidar».
+                  ellas. Si lo amortizas entero, usa «Pagar todo».
                 </p>
               )}
             </section>
@@ -441,7 +441,7 @@ export default function PrestamoDialogContent({
               {formatCents(p.pendienteCents)} pendientes siguen contando como deuda en tu patrimonio.
             </p>
             <p className="text-[13px] leading-[18px] text-muted">
-              Es para cuando ya no quieres seguirlo aquí. Si lo has pagado entero, mejor «Liquidar»: deja la
+              Es para cuando ya no quieres seguirlo aquí. Si lo has pagado entero, mejor «Pagar todo»: deja la
               deuda a cero. No tiene vuelta atrás.
             </p>
             <FieldError>{error}</FieldError>

@@ -17,7 +17,7 @@ import {
  *
  *   · la deuda (el saldo de la cuenta-pasivo) queda a cero;
  *   · la cuenta de pago baja exactamente lo pendiente más la comisión;
- *   · la ficha dice «Liquidado» y ya no ofrece «Liquidar» otra vez;
+ *   · la ficha dice «Liquidado» y ya no ofrece «Pagar todo» otra vez;
  *   · y que, al eliminarlo, el saldo vuelve a ser el de antes del alta.
  *
  * El préstamo lleva el prefijo «E2E-LIQUIDAR» y se elimina al final también si
@@ -88,8 +88,8 @@ test("liquidar un préstamo paga lo pendiente y la comisión y deja la deuda a c
 
     // 2 · Liquidar hoy, con 10 € de comisión de cancelación.
     const hoja = await abrirGestion(page, nombre);
-    await hoja.getByRole("button", { name: "Liquidar", exact: true }).click();
-    await expect(hoja.getByRole("heading", { name: `Liquidar ${nombre}` })).toBeVisible();
+    await hoja.getByRole("button", { name: "Pagar todo", exact: true }).click();
+    await expect(hoja.getByRole("heading", { name: "Pagar todo lo que queda" })).toBeVisible();
     await expect(hoja.getByLabel("Fecha", { exact: true })).toHaveValue(hoy);
     await hoja.getByLabel("Comisión (opcional)").fill("10,00");
     await hoja.getByRole("button", { name: "Liquidar", exact: true }).click();
@@ -99,8 +99,11 @@ test("liquidar un préstamo paga lo pendiente y la comisión y deja la deuda a c
     const ficha = page.getByRole("region", { name: nombre });
     await expect(ficha).toContainText(/Liquidado/);
     const gestion = await abrirGestion(page, nombre);
-    await expect(gestion.getByRole("button", { name: "Liquidar", exact: true })).toHaveCount(0);
+    await expect(gestion.getByRole("button", { name: "Pagar todo", exact: true })).toHaveCount(0);
     await page.keyboard.press("Escape");
+    await expect(
+      page.getByRole("region", { name: nombre }).getByRole("button", { name: "Pagar todo lo que queda" }),
+    ).toHaveCount(0);
 
     // 4 · Deuda a cero; la cuenta de pago paga lo pendiente y la comisión.
     expect(await saldoPrestamo(page, nombre)).toBe(0);

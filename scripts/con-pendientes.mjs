@@ -163,6 +163,13 @@ globalThis.fetch = async function (recurso, init = {}) {
     );
     return json({ id, email: datos.email ?? null, aud: "authenticated", role: "authenticated" });
   }
-  if (metodo === "DELETE") return json({});
+  if (metodo === "DELETE" && m[1]) {
+    // Se borra dentro de la transacción, como haría la API: una prueba que
+    // compruebe que su limpieza funcionó lo ve borrado, y el rollback final lo
+    // deshace igual.
+    const cliente = await principalListo;
+    await cliente.query("delete from auth.users where id = $1", [decodeURIComponent(m[1])]);
+    return json({});
+  }
   throw new Error(`con-pendientes: ${metodo} ${m[0]} no está emulado`);
 };

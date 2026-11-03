@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import type { Result } from "axe-core";
+import { pantallaQuieta } from "./helpers";
 
 /**
  * Auditoría de accesibilidad automatizada con axe-core sobre las nueve pantallas
@@ -66,6 +67,7 @@ function detalle(violaciones: Result[]) {
 }
 
 async function analizar(page: Page, etiqueta: string) {
+  await pantallaQuieta(page);
   const { violations } = await axe(page).analyze();
   registrar(etiqueta, violations);
   return violations;

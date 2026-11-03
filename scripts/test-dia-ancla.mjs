@@ -146,9 +146,14 @@ async function main() {
     check("alta de gasto con suscripción el 31 de agosto: próximo el 30 de septiembre, ancla 31", alta.n === "2026-09-30" && ea.anchor_day === 31, JSON.stringify({ alta, ea }));
     await como(uid, "select public.generate_subscription_charges()");
     const fa = await fechas("subscription_id", alta.s);
-    check("… y al generar: 31 ago, 30 sep (y el 31 de octubre cuando toque)", fa.slice(0, 2).join() === "2026-08-31,2026-09-30", fa.join(", "));
+    // Las fechas con ancla 31 hasta hoy van generadas, y la siguiente es la próxima: no se
+    // fija una fecha concreta, que deja de valer en cuanto pasa (fallaba el 3 de noviembre).
+    const anclas = ["2026-08-31", "2026-09-30", "2026-10-31", "2026-11-30", "2026-12-31", "2027-01-31", "2027-02-28", "2027-03-31"];
+    const [{ hoy }] = await q("select private.hoy()::text as hoy");
+    const cobradas = anclas.filter((d) => d <= hoy);
+    check(`… y al generar: las de ancla 31 hasta hoy (${cobradas.length}), cada mes en su último día si no llega`, fa.join() === cobradas.join(), fa.join(", "));
     const [pa] = await q("select next_charge_date::text as n from public.subscription where id = $1", [alta.s]);
-    check("… su próximo cobro es el 31 de octubre", pa.n === "2026-10-31", JSON.stringify(pa));
+    check(`… su próximo cobro es el siguiente de ancla 31 (${anclas.find((d) => d > hoy)})`, pa.n === anclas.find((d) => d > hoy), JSON.stringify(pa));
 
     console.log("\n— Esquema y datos reales —\n");
     const [cfg] = await q(`

@@ -547,6 +547,8 @@ export type Database = {
           color: string;
           since: string;
           archived: boolean;
+          /** El día en que se archivó; lo pone y lo quita un disparador. */
+          archived_on: string | null;
         } & Timestamps;
         Insert: {
           id?: string;
