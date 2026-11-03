@@ -16,13 +16,13 @@ Aplicación web de finanzas personales, multiusuario y con aislamiento estricto 
 
 <br>
 
-![Next.js](https://img.shields.io/badge/Next.js-16.3-0a0d17?style=flat-square&logo=nextdotjs&logoColor=ecf1fb&labelColor=141b28)
+![Next.js](https://img.shields.io/badge/Next.js-16.4-0a0d17?style=flat-square&logo=nextdotjs&logoColor=ecf1fb&labelColor=141b28)
 ![React](https://img.shields.io/badge/React-19.2-0a0d17?style=flat-square&logo=react&logoColor=48d4d0&labelColor=141b28)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-0a0d17?style=flat-square&logo=typescript&logoColor=6aa9e8&labelColor=141b28)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17.6-0a0d17?style=flat-square&logo=postgresql&logoColor=8de6c0&labelColor=141b28)
 ![Supabase](https://img.shields.io/badge/Supabase-Auth_·_PostgREST-0a0d17?style=flat-square&logo=supabase&logoColor=8de6c0&labelColor=141b28)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-0a0d17?style=flat-square&logo=tailwindcss&logoColor=48d4d0&labelColor=141b28)
-![Vitest](https://img.shields.io/badge/Vitest-789_tests-0a0d17?style=flat-square&logo=vitest&logoColor=e6c06a&labelColor=141b28)
+![Vitest](https://img.shields.io/badge/Vitest-822_tests-0a0d17?style=flat-square&logo=vitest&logoColor=e6c06a&labelColor=141b28)
 ![Playwright](https://img.shields.io/badge/Playwright-e2e_·_axe-0a0d17?style=flat-square&logo=playwright&logoColor=8de6c0&labelColor=141b28)
 ![Licencia](https://img.shields.io/badge/licencia-todos_los_derechos_reservados-0a0d17?style=flat-square&labelColor=141b28)
 
@@ -244,9 +244,9 @@ sequenceDiagram
 
 | Capa | Herramienta | Alcance |
 |---|---|---|
-| Unitarias | Vitest · fast-check | **789 pruebas** en 51 ficheros. Dinero, fechas y parser CSV con pruebas de propiedades, Server Actions y rutas con dependencias simuladas, y el `matcher` del proxy. |
-| Base de datos | `pg` contra PostgreSQL real | **40 suites** que se ejecutan dentro de una transacción con `ROLLBACK`. Aislamiento entre usuarios, invariantes financieros, ingesta, alertas y concurrencia. Con `--pendientes`, aplican antes las migraciones aún no desplegadas, de modo que se prueba el esquema posterior a `db push` sin tocar producción. |
-| Auditoría de esquema | `npm run db:audit` | RLS forzada en toda tabla, `security_invoker` en toda vista, `search_path` fijado en toda función `DEFINER`, ausencia de columnas de saldo y claves foráneas compuestas. |
+| Unitarias | Vitest · fast-check | **822 pruebas** en 53 ficheros. Dinero, fechas y parser CSV con pruebas de propiedades, Server Actions y rutas con dependencias simuladas, y el `matcher` del proxy. |
+| Base de datos | `pg` contra PostgreSQL real | **45 suites** que se ejecutan dentro de una transacción con `ROLLBACK`. Aislamiento entre usuarios, invariantes financieros, ingesta, alertas y concurrencia. Con `--pendientes`, aplican antes las migraciones aún no desplegadas, de modo que se prueba el esquema posterior a `db push` sin tocar producción. |
+| Auditoría de esquema | `npm run db:audit` | RLS forzada en toda tabla, `security_invoker` en toda vista, `search_path` fijado en toda función `DEFINER`, ausencia de columnas de saldo, claves foráneas compuestas y catálogos compartidos de solo lectura. |
 | Extremo a extremo | Playwright · axe-core | **21 especificaciones**: altas, traspasos, reembolsos, préstamos, inversiones, accesibilidad completa, desbordes a 320 px y comportamiento sin red. |
 | Despliegue | `scripts/check-deploy.mjs` | Comprobación del entorno publicado: rutas, ingesta, service worker, manifiesto y ausencia de credenciales en el HTML y en los *chunks* diferidos. |
 

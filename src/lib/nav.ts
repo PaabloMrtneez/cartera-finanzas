@@ -161,8 +161,3 @@ export function parentTab(pathname: string): NavItem | null {
 
   return null;
 }
-
-/** Título de la barra superior de escritorio para una ruta. */
-export function sectionTitle(pathname: string): string {
-  return SECTIONS.find((s) => pathname === s.href || pathname.startsWith(`${s.href}/`))?.label ?? "Cartera";
-}

@@ -3,9 +3,7 @@
 import { revalidatePath } from "next/cache";
 import {
   CuadroInvalido,
-  type CuotaDelCuadro,
   type LoanDeletePreview,
-  arranqueYaApuntado,
   hoyEnMadrid,
   parseLoanCreateResult,
   parseLoanDeletePreview,
@@ -17,7 +15,6 @@ import {
   loanCreateSchema,
   loanDeleteSchema,
   loanPrepaymentSchema,
-  loanPreviewSchema,
   loanSettleSchema,
   loanTermsSchema,
   loanUpdateSchema,
@@ -129,66 +126,6 @@ function amable(error: { message?: string; code?: string }): string {
 // directamente para una vista previa en vivo; esto es para quien prefiera
 // pedirla al servidor.
 // ---------------------------------------------------------------------------
-
-export type LoanPreview = {
-  cuota: number;
-  ultimaCuota: number;
-  interesesTotales: number;
-  comision: number;
-  costeTotal: number;
-  totalCuotas: number;
-  /** TAE calculada en % (dos decimales), o null. */
-  tae: number | null;
-  primeraCuota: string;
-  fechaFin: string;
-  cuadro: CuotaDelCuadro[];
-  /** Solo «ya lo tenía apuntado»: desde qué cuota sigue la app y con qué deuda arranca. */
-  arranque: { primerPeriodo: number; pendiente: number } | null;
-};
-
-type PreviewResult = { ok: true; preview: LoanPreview } | { ok: false; error: string };
-
-export async function previewLoan(formData: FormData): Promise<PreviewResult> {
-  const parsed = loanPreviewSchema.safeParse(leerCondiciones(formData));
-  if (!parsed.success) return { ok: false, error: firstIssue(parsed.error) };
-  const c = parsed.data;
-
-  try {
-    const r = resumenPrestamo({
-      principalCents: c.principal_cents,
-      plazoMeses: c.term_months,
-      tin: c.tin,
-      primeraCuota: c.first_charge_on,
-      comisionCents: c.opening_fee_cents,
-    });
-    let arranque: LoanPreview["arranque"] = null;
-    if (!c.disbursed) {
-      arranque = arranqueYaApuntado(r.cuadro, hoyEnMadrid());
-      if (!arranque) {
-        return { ok: false, error: "Todas las cuotas de este préstamo ya han pasado: estaría pagado." };
-      }
-    }
-    return {
-      ok: true,
-      preview: {
-        cuota: r.cuota,
-        ultimaCuota: r.ultimaCuota,
-        interesesTotales: r.interesesTotales,
-        comision: r.comision,
-        costeTotal: r.costeTotal,
-        totalCuotas: r.totalCuotas,
-        tae: r.tae,
-        primeraCuota: c.first_charge_on,
-        fechaFin: r.fechaFin,
-        cuadro: r.cuadro,
-        arranque,
-      },
-    };
-  } catch (e) {
-    if (e instanceof CuadroInvalido) return { ok: false, error: e.message };
-    throw e;
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Alta
@@ -460,14 +397,3 @@ export async function deleteLoan(id: string, formData: FormData): Promise<Action
 // el cron de /api/notificar cada dos horas), pero sirve para no esperar.
 // Idempotente: pulsarlo dos veces no cobra dos veces.
 // ---------------------------------------------------------------------------
-
-export async function generateLoanInstallments(): Promise<ActionResult & { created?: number }> {
-  const s = await conSesion();
-  if (!s.ok) return s;
-  const { supabase } = s;
-  const { data, error } = await supabase.rpc("generate_loan_installments");
-  if (error) return { ok: false, error: amable(error) };
-
-  revalidar();
-  return { ok: true, created: data ?? 0 };
-}

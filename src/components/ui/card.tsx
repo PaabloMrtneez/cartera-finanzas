@@ -50,13 +50,6 @@ export function Eyebrow({ className, ...props }: React.ComponentProps<"h2">) {
   );
 }
 
-/** Tarjeta anidada dentro de otra: superficie secundaria y radio menor. */
-export function InnerCard({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div className={cn("overflow-hidden rounded-md bg-surface-2", className)} {...props} />
-  );
-}
-
 /**
  * Sección con el rótulo FUERA de la tarjeta, al estilo de los ajustes de iOS.
  *

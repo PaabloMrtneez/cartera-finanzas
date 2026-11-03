@@ -1,7 +1,7 @@
 "use client";
 
 import * as RadixSelect from "@radix-ui/react-select";
-import type { ComponentProps, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Icon } from "@/components/ui/icon";
 import { cn } from "@/lib/cn";
 
@@ -131,9 +131,4 @@ export function SelectItem({
       </RadixSelect.ItemIndicator>
     </RadixSelect.Item>
   );
-}
-
-/** Reexport del separador de Radix por si alguna hoja agrupa opciones. */
-export function SelectSeparator({ className }: ComponentProps<"div">) {
-  return <RadixSelect.Separator className={cn("my-1 h-px bg-hairline", className)} />;
 }

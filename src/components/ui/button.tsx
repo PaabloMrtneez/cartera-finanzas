@@ -138,8 +138,3 @@ export const fabClasses = cn(
   "transition-[scale] duration-[180ms] ease-ui active:duration-[120ms] active:scale-[0.97]",
   "[-webkit-tap-highlight-color:transparent]",
 );
-
-/** El botón redondo del centro de la barra de pestañas. */
-export function Fab({ className, type = "button", ...props }: React.ComponentProps<"button">) {
-  return <button type={type} className={cn(fabClasses, className)} {...props} />;
-}

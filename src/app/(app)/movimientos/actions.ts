@@ -9,7 +9,7 @@ import {
   type TransactionInput,
 } from "@/lib/schemas";
 import { NO_ENCONTRADO, conSesion, esId, filasTocadas, mensajeErrorDb } from "@/lib/acciones-servidor";
-import { PERIODICITIES, TRANSACTION_TYPES } from "@/lib/types";
+import { PERIODICITIES } from "@/lib/types";
 
 function parse(formData: FormData) {
   const nullable = (key: string) => {
@@ -194,37 +194,6 @@ export async function deleteTransaction(id: string): Promise<ActionResult> {
   if (!s.ok) return s;
 
   const fallo = filasTocadas(await s.supabase.from("transaction").delete().eq("id", id).select("id"), friendly);
-  if (fallo) return { ok: false, error: fallo };
-
-  revalidateAll();
-  return { ok: true };
-}
-
-/** Confirma un cargo que llegó del Atajo y quedó pendiente de clasificar. */
-export async function confirmTransaction(
-  id: string,
-  categoryId: string | null,
-  categoryType: "EXPENSE" | "INCOME" | "TRANSFER" | null,
-): Promise<ActionResult> {
-  if (!esId(id)) return { ok: false, error: NO_ENCONTRADO };
-  if (categoryId !== null && !esId(categoryId)) return { ok: false, error: "Elige una categoría." };
-  if (categoryType !== null && !(TRANSACTION_TYPES as readonly string[]).includes(categoryType)) {
-    return { ok: false, error: "Elige una categoría." };
-  }
-  // El espejo `category_type` va con la categoría: los dos o ninguno.
-  if ((categoryId === null) !== (categoryType === null)) return { ok: false, error: "Elige una categoría." };
-
-  const s = await conSesion();
-  if (!s.ok) return s;
-
-  const fallo = filasTocadas(
-    await s.supabase
-      .from("transaction")
-      .update({ status: "CONFIRMED", category_id: categoryId, category_type: categoryType })
-      .eq("id", id)
-      .select("id"),
-    friendly,
-  );
   if (fallo) return { ok: false, error: fallo };
 
   revalidateAll();

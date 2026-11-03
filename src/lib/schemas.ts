@@ -384,7 +384,6 @@ const entero = (min: number, max: number, mensaje: string) =>
 
 /** Cómo se escribe la comisión de apertura: un importe o un % del principal. */
 export const LOAN_FEE_MODES = ["IMPORTE", "PORCENTAJE"] as const;
-export type LoanFeeMode = (typeof LOAN_FEE_MODES)[number];
 
 /** Las condiciones financieras, sin la cuenta (la vista previa no la necesita). */
 const loanFinanceBase = z.object({
@@ -585,9 +584,6 @@ export const loanDeleteSchema = z.object({
     .max(40, "Máximo 40 caracteres"),
 });
 
-export type LoanTermsInput = z.input<typeof loanTermsSchema>;
-export type LoanTerms = z.output<typeof loanTermsSchema>;
-
 export type SeguirInstrumentoInput = z.input<typeof seguirInstrumentoSchema>;
 export type AjustarParticipacionesInput = z.input<typeof ajustarParticipacionesSchema>;
 export type DejarDeSeguirInput = z.input<typeof dejarDeSeguirSchema>;
@@ -608,9 +604,6 @@ export const invitarSchema = z.object({
     .pipe(z.email("Ese correo no parece válido")),
 });
 
-export type AccountInput = z.infer<typeof accountSchema>;
-export type CardInput = z.infer<typeof cardSchema>;
-export type CategoryInput = z.infer<typeof categorySchema>;
 export type TransactionInput = z.infer<typeof transactionSchema>;
 
 /** Forma que devuelven todas las acciones de servidor. */

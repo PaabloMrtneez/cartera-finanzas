@@ -31,7 +31,3 @@ export const CATEGORIAS_SUGERIDAS: CategoriaSugerida[] = [
   { clave: "compras", name: "Compras", type: "EXPENSE", color: "#8b3fbf", icon: "shopping-bag" },
   { clave: "nomina", name: "Nómina", type: "INCOME", color: "#0e7352", icon: "banknote" },
 ];
-
-export function esClaveSugerida(clave: string): boolean {
-  return CATEGORIAS_SUGERIDAS.some((c) => c.clave === clave);
-}

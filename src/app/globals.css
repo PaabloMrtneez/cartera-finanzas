@@ -376,16 +376,13 @@
   /* El diálogo centrado de escritorio, como una alerta de iOS. */
   --animate-alert-in: om-alert-in var(--dur-alert-in) var(--ease-out) backwards;
   --animate-alert-out: om-fade-out var(--dur-alert-out) var(--ease-out) both;
-  --animate-fade-out: om-fade-out 150ms var(--ease-out) both;
   --animate-fade-in: om-fade-in 200ms var(--ease-out) both;
   --animate-bar-grow: om-bar-grow 320ms var(--ease-out) both;
   /* La hermana horizontal: una barra de proporción se llena desde su origen
      izquierdo, y por eso quien la use debe poner también `origin-left`. La usa la
      banda Aurora, segmento a segmento, con un escalonado de 30–80 ms. */
   --animate-bar-fill: om-bar-fill 420ms var(--ease-out) both;
-  --animate-pulse-soft: om-pulse 1200ms ease-in-out infinite;
   --animate-chart-in: om-chart-in 420ms var(--ease-out) both;
-  --animate-progress: om-progress 1400ms cubic-bezier(0.4, 0, 0.2, 1) infinite;
   /* Entrada en cascada de los bloques héroe de una pantalla: un empujón corto
      desde abajo con fundido. Recorre poco (14 px), así que cabe en 300 ms; el
      escalonado lo pone quien la usa con `animation-delay`. */
@@ -485,14 +482,6 @@
   }
   to {
     clip-path: inset(-24px -24px -24px -24px);
-  }
-}
-@keyframes om-progress {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(250%);
   }
 }
 @keyframes om-brillo {
@@ -1214,8 +1203,7 @@ body::before {
 
   .animate-sheet-out,
   .animate-alert-out,
-  .animate-scrim-out,
-  .animate-fade-out {
+  .animate-scrim-out {
     animation: om-fade-out 120ms linear both !important;
   }
 
@@ -1246,11 +1234,6 @@ body::before {
     :root:is([data-nav="pop"], [data-nav="hoja-baja"])::view-transition-new(.pantalla-entra) {
       animation: none !important;
     }
-  }
-
-  .animate-pulse-soft,
-  .animate-progress {
-    animation: om-pulse 1600ms ease-in-out infinite !important;
   }
 
   /* El trazo héroe ya no se dibuja: aparece entero con un fundido. Y el halo

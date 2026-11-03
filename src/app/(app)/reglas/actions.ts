@@ -86,19 +86,6 @@ export async function previewRule(matchText: string): Promise<{ occurrences: num
   return { occurrences: row?.occurrences ?? 0, totalCents: row?.total_cents ?? 0 };
 }
 
-/** Aplica una regla ya existente a lo que siga sin clasificar. */
-export async function applyRule(id: string): Promise<ActionResult & { applied?: number }> {
-  if (!esId(id)) return { ok: false, error: NO_ENCONTRADO };
-  const sesion = await conSesion();
-  if (!sesion.ok) return sesion;
-
-  const { data, error } = await sesion.supabase.rpc("apply_merchant_rule", { p_rule_id: id });
-  if (error) return { ok: false, error: friendly(error) };
-
-  revalidate();
-  return { ok: true, applied: data ?? 0 };
-}
-
 function revalidate() {
   revalidatePath("/reglas");
   revalidatePath("/movimientos");

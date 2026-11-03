@@ -77,24 +77,6 @@ export async function updateSubscription(id: string, formData: FormData): Promis
   return { ok: true };
 }
 
-/** Pausar en vez de borrar: en pausa deja de generar y sale del compromiso. */
-export async function setSubscriptionActive(id: string, active: boolean): Promise<ActionResult> {
-  if (!esId(id)) return { ok: false, error: NO_ENCONTRADO };
-  if (typeof active !== "boolean") return { ok: false, error: "Petición no válida. Recarga la página." };
-
-  const sesion = await conSesion();
-  if (!sesion.ok) return sesion;
-
-  const fallo = filasTocadas(
-    await sesion.supabase.from("subscription").update({ active }).eq("id", id).select("id"),
-    friendly,
-  );
-  if (fallo) return { ok: false, error: fallo };
-
-  revalidate();
-  return { ok: true };
-}
-
 export async function deleteSubscription(id: string): Promise<ActionResult> {
   if (!esId(id)) return { ok: false, error: NO_ENCONTRADO };
   const sesion = await conSesion();

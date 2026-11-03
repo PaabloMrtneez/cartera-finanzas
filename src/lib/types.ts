@@ -17,7 +17,6 @@ export type AccountType = (typeof ACCOUNT_TYPES)[number];
  * el préstamo exista.
  */
 export const ACCOUNT_TYPES_ELEGIBLES = ["BANCO", "EFECTIVO", "AHORRO", "INVERSION"] as const;
-export type AccountTypeElegible = (typeof ACCOUNT_TYPES_ELEGIBLES)[number];
 
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   BANCO: "Banco",
@@ -39,12 +38,6 @@ export const ACCOUNT_TYPE_ICONS: Record<AccountType, string> = {
 export const LOAN_STATUSES = ["ACTIVO", "LIQUIDADO", "CANCELADO"] as const;
 export type LoanStatus = (typeof LOAN_STATUSES)[number];
 
-export const LOAN_STATUS_LABELS: Record<LoanStatus, string> = {
-  ACTIVO: "Activo",
-  LIQUIDADO: "Liquidado",
-  CANCELADO: "Cancelado",
-};
-
 /** De qué parte de un préstamo es un movimiento (columna `transaction.loan_part`). */
 export const LOAN_PARTS = [
   "DESEMBOLSO",
@@ -57,9 +50,6 @@ export const LOAN_PARTS = [
   "COMISION_AMORTIZACION",
 ] as const;
 export type LoanPart = (typeof LOAN_PARTS)[number];
-
-/** El estado de cada cuota en `loan_schedule`. */
-export type LoanInstallmentState = "PREVIA" | "COBRADA" | "PENDIENTE" | "ANULADA";
 
 /**
  * El tipo de una tarjeta. Es una etiqueta informativa, no un comportamiento:
@@ -76,7 +66,6 @@ export const CARD_TYPE_LABELS: Record<CardType, string> = {
 };
 
 export const TRANSACTION_SOURCES = ["SHORTCUT", "MANUAL", "RECURRING", "IMPORT"] as const;
-export type TransactionSource = (typeof TRANSACTION_SOURCES)[number];
 
 export const PERIODICITIES = ["SEMANAL", "MENSUAL", "TRIMESTRAL", "ANUAL"] as const;
 export type Periodicity = (typeof PERIODICITIES)[number];

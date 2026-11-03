@@ -52,7 +52,6 @@ export type DialogSize = keyof typeof SIZES;
 
 export const Dialog = DialogPrimitive.Root;
 export const DialogTrigger = DialogPrimitive.Trigger;
-export const DialogClose = DialogPrimitive.Close;
 
 export function DialogContent({
   size = "base",
